@@ -43,7 +43,3 @@ Desain responsive yang optimal untuk desktop, tablet, dan mobile menggunakan Tai
 ## Support
 
 Untuk pertanyaan atau bantuan, silakan hubungi developer atau buat issue di repository ini.
-
-## License
-
-Berbayar untuk backend - silakan hubungi administrator untuk kerjasama
