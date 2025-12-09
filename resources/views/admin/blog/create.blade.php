@@ -1,0 +1,76 @@
+@extends('admin.layouts.app')
+
+@section('title', 'Buat Artikel Baru')
+@section('page-title', 'Buat Artikel Baru')
+
+@section('content')
+<div class="max-w-3xl mx-auto">
+    <div class="bg-white shadow-xl rounded-2xl p-6 sm:p-8">
+        <form action="{{ route('admin.blog.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+            @csrf
+
+            <!-- Judul -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Judul</label>
+                <input type="text" name="judul" value="{{ old('judul') }}" 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base transition" 
+                       placeholder="Masukkan judul artikel" required>
+                @error('judul') 
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p> 
+                @enderror
+            </div>
+
+            <!-- Excerpt -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Excerpt (Ringkasan)</label>
+                <textarea name="excerpt" rows="3"
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base transition resize-y" 
+                          placeholder="Tulis ringkasan artikel...">{{ old('excerpt') }}</textarea>
+                @error('excerpt') 
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p> 
+                @enderror
+            </div>
+
+            <!-- Isi -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Isi Artikel</label>
+                <textarea name="isi" rows="8"
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base transition resize-y" 
+                          placeholder="Tulis isi artikel di sini..." required>{{ old('isi') }}</textarea>
+                @error('isi') 
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p> 
+                @enderror
+            </div>
+
+            <!-- Thumbnail -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Thumbnail</label>
+                <input type="file" name="thumbnail" accept="image/*" 
+                       class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 
+                              file:rounded-lg file:border-0 
+                              file:text-sm file:font-semibold 
+                              file:bg-blue-50 file:text-blue-600 
+                              hover:file:bg-blue-100 cursor-pointer">
+                @error('thumbnail') 
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p> 
+                @enderror
+            </div>
+
+         
+
+            <!-- Actions -->
+            <div class="pt-4 flex items-center gap-3">
+                <button type="submit" 
+                        class="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                    Simpan Artikel
+                </button>
+
+                <a href="{{ route('admin.blog.index') }}" 
+                   class="px-6 py-3 bg-gray-500 text-white font-semibold rounded-lg shadow hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition-all duration-200">
+                    Kembali
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+@endsection
