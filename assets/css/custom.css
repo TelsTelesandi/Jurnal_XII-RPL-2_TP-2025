@@ -1,0 +1,41 @@
+/* Modern form styles — tidak mengubah struktur form/field names */
+:root{
+  --bg:#f5f7fa;
+  --card:#ffffff;
+  --muted:#6c757d;
+  --primary:#0d6efd;
+  --accent:#1a73e8;
+  --radius:10px;
+}
+body{background:var(--bg);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+.card-modern{
+  background:var(--card);
+  border:0;
+  border-radius:var(--radius);
+  box-shadow:0 6px 18px rgba(22,28,37,0.08);
+  padding:1.25rem;
+}
+.form-control-modern{
+  border:1px solid rgba(22,28,37,0.08);
+  border-radius:8px;
+  padding:.65rem .85rem;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.02);
+  transition:all .15s ease;
+}
+.form-control-modern:focus{
+  outline:0;
+  box-shadow:0 6px 18px rgba(13,110,253,0.12);
+  border-color:var(--accent);
+}
+.label-small{font-size:.85rem;color:var(--muted);margin-bottom:.35rem;display:block}
+.btn-modern{
+  background:linear-gradient(180deg,var(--primary),#0b5ed7);
+  color:#fff;border:0;border-radius:8px;padding:.5rem .9rem;
+  box-shadow:0 6px 18px rgba(13,110,253,0.12);
+}
+.btn-ghost{background:transparent;border:1px solid rgba(22,28,37,0.06);color:var(--muted)}
+.input-group-icon{display:flex;gap:.5rem;align-items:center}
+.small-muted{color:var(--muted);font-size:.85rem}
+.field-row{margin-bottom:1rem}
+.file-preview{font-size:.85rem;color:var(--muted);margin-top:.4rem}
+@media (max-width:768px){.card-modern{padding:1rem}}
