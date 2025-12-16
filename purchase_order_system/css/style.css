@@ -1,0 +1,112 @@
+/* Reset default styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Form styles */
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    outline: 0;
+}
+
+/* Remove red outline on error */
+.is-invalid:focus,
+.was-validated .form-control:invalid:focus,
+.form-control.is-invalid:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+}
+
+/* Navbar styles */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 0.5rem 1rem;
+}
+
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+.navbar-nav .nav-link {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.navbar-nav .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+/* Dropdown menu */
+.dropdown-menu {
+    border: none;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0;
+    margin-top: 0.5rem;
+}
+
+.dropdown-item {
+    padding: 0.5rem 1.5rem;
+    font-size: 0.9rem;
+    color: #333;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #0d6efd;
+}
+
+.dropdown-divider {
+    margin: 0.5rem 0;
+}
+
+/* Remove outline from dropdown toggle */
+.nav-link.dropdown-toggle:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* User dropdown */
+#userDropdown {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+}
+
+#userDropdown:hover {
+    color: #fff;
+    text-decoration: none;
+}
+
+#userDropdown i {
+    font-size: 1.25rem;
+    margin-right: 0.5rem;
+}
+
+/* Remove any default focus styles */
+:focus {
+    outline: none !important;
+}
+
+/* Remove any red border or outline that might be coming from browser validation */
+input:invalid, select:invalid, textarea:invalid {
+    box-shadow: none;
+    border-color: #ced4da !important;
+}
+
+/* Remove any red outline on focus */
+*:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
