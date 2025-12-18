@@ -1,0 +1,61 @@
+# RollMate .gitignore
+# File dan folder yang tidak perlu di-commit ke Git
+
+# IDE dan Editor
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# Konfigurasi lokal (jangan commit password!)
+config/database.php.local
+config/local.php
+
+# Log files
+*.log
+logs/
+error_log
+
+# Temporary files
+tmp/
+temp/
+cache/
+*.tmp
+*.bak
+*.swp
+*~
+
+# Upload files (jika ada fitur upload)
+uploads/
+files/
+
+# Backup files
+*.sql.backup
+backup/
+*.zip
+*.tar.gz
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# PHP
+vendor/
+composer.phar
+composer.lock
+
+# Node modules (jika menggunakan npm)
+node_modules/
+package-lock.json
+
+# Environment files
+.env
+.env.local
+.env.*.local
