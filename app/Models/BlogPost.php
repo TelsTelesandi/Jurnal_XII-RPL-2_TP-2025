@@ -45,4 +45,19 @@ class BlogPost extends Model
     {
         return $this->belongsTo(Category::class, 'category_id');
     }
+
+    // Relasi ke likes
+    public function likes()
+    {
+        return $this->hasMany(BlogLike::class, 'blog_post_id');
+    }
+
+    // Cek apakah postingan disukai oleh user tertentu
+    public function isLikedBy(?User $user)
+    {
+        if (!$user) {
+            return false;
+        }
+        return $this->likes()->where('user_id', $user->id)->exists();
+    }
 }

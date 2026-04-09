@@ -20,7 +20,7 @@
                     <!-- Header Gambar -->
                     <div class="relative h-[50vh] flex flex-col items-center justify-center overflow-hidden">
                         <!-- Gambar -->
-                        <img src="{{ asset('image/image copy.png') }}" alt="Tentang Kami"
+                        <img src="{{ asset('image/image copy.png') }}" alt="Tentang Kami" loading="lazy"
                             class="absolute inset-0 w-full h-full object-cover">
 
                         <!-- Overlay blur putih -->
@@ -70,7 +70,7 @@
         <div class="max-w-5xl mx-auto px-6 text-center">
             <h2 class="text-3xl font-bold mb-4">STRUKTUR ORGANISASI</h2>
             <div class="w-16 h-1 bg-blue-500 mx-auto mb-8"></div>
-            <img src="{{ asset('image/image copy 3.png') }}" alt="Struktur Organisasi"
+            <img src="{{ asset('image/image copy 3.png') }}" alt="Struktur Organisasi" loading="lazy"
                 class="mx-auto max-w-full rounded-lg shadow-lg">
         </div>
     </section>
@@ -193,17 +193,21 @@
             </span>
 
             <!-- Running Text -->
-            <div class="flex-1 h-10 flex items-center overflow-hidden rounded-lg bg-[#476ba5] px-4 relative">
-                <div class="whitespace-nowrap animate-marquee text-white text-sm md:text-base">
-                    🌐 PT. Rekan Kinerja Abadi – Pelatihan GIS & Remote Sensing 80% Praktik, 20% Teori •
-                    ✨ Inovasi teknologi untuk pembangunan berkelanjutan •
-                    📡 Workshop Remote Sensing untuk profesional •
-                    🤝 Kerja sama strategis dengan mitra pendidikan & teknologi
-                    &nbsp;&nbsp;&nbsp;
-                    🌐 PT. Rekan Kinerja Abadi – Pelatihan GIS & Remote Sensing 80% Praktik, 20% Teori •
-                    ✨ Inovasi teknologi untuk pembangunan berkelanjutan •
-                    📡 Workshop Remote Sensing untuk profesional •
-                    🤝 Kerja sama strategis dengan mitra pendidikan & teknologi
+            <div class="flex-1 h-10 flex items-center overflow-hidden rounded-lg bg-[#476ba5] relative">
+                <div class="animate-marquee-wrapper flex min-w-fit">
+                    <div class="animate-marquee text-white text-sm md:text-base whitespace-nowrap px-4">
+                        🌐 PT. Rekan Kinerja Abadi – Pelatihan GIS & Remote Sensing 80% Praktik, 20% Teori &nbsp;&nbsp;•&nbsp;&nbsp;
+                        ✨ Inovasi teknologi untuk pembangunan berkelanjutan &nbsp;&nbsp;•&nbsp;&nbsp;
+                        📡 Workshop Remote Sensing untuk profesional &nbsp;&nbsp;•&nbsp;&nbsp;
+                        🤝 Kerja sama strategis dengan mitra pendidikan & teknologi
+                    </div>
+                    <!-- Duplicate for seamless loop -->
+                    <div class="animate-marquee text-white text-sm md:text-base whitespace-nowrap px-4" aria-hidden="true">
+                        🌐 PT. Rekan Kinerja Abadi – Pelatihan GIS & Remote Sensing 80% Praktik, 20% Teori &nbsp;&nbsp;•&nbsp;&nbsp;
+                        ✨ Inovasi teknologi untuk pembangunan berkelanjutan &nbsp;&nbsp;•&nbsp;&nbsp;
+                        📡 Workshop Remote Sensing untuk profesional &nbsp;&nbsp;•&nbsp;&nbsp;
+                        🤝 Kerja sama strategis dengan mitra pendidikan & teknologi
+                    </div>
                 </div>
             </div>
         </div>
@@ -216,11 +220,30 @@
         <div class="md:col-span-2 order-1">
             <a href="{{ route('blog.show', $main->slug) }}"
                class="block rounded-xl shadow-lg overflow-hidden relative group">
-                <img src="{{ $main->thumbnail ? asset('storage/' . $main->thumbnail) : asset('images/default.jpg') }}"
+                <img src="{{ $main->thumbnail ? asset('storage/' . $main->thumbnail) : asset('images/default.jpg') }}" loading="lazy"
                      alt="{{ $main->judul }}" class="w-full h-[250px] md:h-[400px] object-cover">
                 <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent"></div>
                 <div class="absolute bottom-0 left-0 right-0 p-6 text-white">
-                    <p class="text-sm mb-2">{{ $main->created_at->diffForHumans() }}</p>
+                    <!-- Meta Info: Date, Views, Comments, Likes -->
+                    <div class="flex flex-wrap items-center gap-4 text-sm mb-3 text-gray-200">
+                        <span class="flex items-center gap-1.5 backdrop-blur-md bg-black/30 px-3 py-1 rounded-full text-xs">
+                            <i class="far fa-calendar-alt"></i> {{ $main->created_at->diffForHumans() }}
+                        </span>
+                        
+                        <div class="flex items-center gap-3 backdrop-blur-md bg-black/30 px-3 py-1 rounded-full text-xs">
+                            @if(isset($main->views_count))
+                                <span class="flex items-center gap-1.5" title="Dilihat">
+                                    <i class="far fa-eye text-blue-300"></i> {{ number_format($main->views_count) }}
+                                </span>
+                            @endif
+                            <span class="flex items-center gap-1.5" title="Komentar">
+                                <i class="far fa-comment-dots text-green-300"></i> {{ number_format($main->comments_count ?? 0) }}
+                            </span>
+                            <span class="flex items-center gap-1.5" title="Suka">
+                                <i class="far fa-heart text-red-400"></i> {{ number_format($main->likes_count ?? 0) }}
+                            </span>
+                        </div>
+                    </div>
                     <h2 class="text-xl md:text-2xl font-bold mb-2 group-hover:text-[#0f9cdc] transition">
                         {{ $main->judul }}
                     </h2>
@@ -236,16 +259,28 @@
             @foreach ($posts->skip(1)->take(2) as $post)
                 <a href="{{ route('blog.show', $post->slug) }}"
                    class="block rounded-xl shadow overflow-hidden relative group">
-                    <img src="{{ $post->thumbnail ? asset('storage/' . $post->thumbnail) : asset('images/default.jpg') }}"
+                    <img src="{{ $post->thumbnail ? asset('storage/' . $post->thumbnail) : asset('images/default.jpg') }}" loading="lazy"
                          alt="{{ $post->judul }}" class="w-full h-[180px] md:h-[190px] object-cover">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-                    <div class="absolute bottom-0 left-0 right-0 p-4 text-white">
-                        <p class="text-xs mb-1">{{ $post->created_at->diffForHumans() }}</p>
-                        <h3 class="text-base md:text-lg font-bold group-hover:text-[#0f9cdc] transition">
+                    <div class="absolute bottom-0 left-0 right-0 p-3 md:p-4 text-white">
+                        <!-- Side Meta -->
+                        <div class="flex flex-wrap items-center gap-2 text-[10px] md:text-xs mb-1.5 text-gray-300">
+                            <span class="flex items-center gap-1">
+                                <i class="far fa-clock"></i> {{ $post->created_at->diffForHumans() }}
+                            </span>
+                            <div class="flex items-center gap-2">
+                                @if(isset($post->views_count))
+                                    <span class="flex items-center gap-1" title="Dilihat"><i class="far fa-eye text-blue-300"></i> {{ number_format($post->views_count) }}</span>
+                                @endif
+                                <span class="flex items-center gap-1" title="Komentar"><i class="far fa-comment-dots text-green-300"></i> {{ number_format($post->comments_count ?? 0) }}</span>
+                                <span class="flex items-center gap-1" title="Suka"><i class="far fa-heart text-red-400"></i> {{ number_format($post->likes_count ?? 0) }}</span>
+                            </div>
+                        </div>
+                        <h3 class="text-sm md:text-base font-bold group-hover:text-[#0f9cdc] transition line-clamp-2 leading-tight">
                             {{ $post->judul }}
                         </h3>
-                        <p class="text-sm text-white/90 line-clamp-2">
-                            {{ $post->excerpt ?? \Illuminate\Support\Str::limit(strip_tags($post->isi), 80) }}
+                        <p class="text-xs text-white/80 line-clamp-1 mt-1">
+                            {{ $post->excerpt ?? \Illuminate\Support\Str::limit(strip_tags($post->isi), 60) }}
                         </p>
                     </div>
                 </a>
@@ -273,16 +308,21 @@
 @endsection
 @if (request()->is('/'))
 <style>
-    @keyframes marquee {
-  0%   { transform: translateX(100%); }
+@keyframes marquee {
+  0% { transform: translateX(0); }
   100% { transform: translateX(-100%); }
 }
 
+.animate-marquee-wrapper {
+  display: flex;
+  width: max-content;
+}
+
 .animate-marquee {
-  display: inline-block;
-  padding-left: 100%; /* supaya start dari kanan penuh */
-  animation: marquee 45s linear infinite;
-  white-space: nowrap;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  animation: marquee 35s linear infinite;
 }
 
 

@@ -32,7 +32,7 @@
                     @if($post->thumbnail)
                         <div class="aspect-video overflow-hidden">
                             <img src="{{ asset('storage/'.$post->thumbnail) }}" 
-                                 alt="{{ $post->judul }}"
+                                 alt="{{ $post->judul }}" loading="lazy"
                                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                         </div>
                     @else
@@ -57,9 +57,10 @@
                             <span>{{ $post->created_at->format('d M Y') }}</span>
                             <div class="flex items-center space-x-2 sm:space-x-3">
                                 @if($post->views_count)
-                                    <span>{{ number_format($post->views_count) }} views</span>
+                                    <span class="flex items-center gap-1" title="Dilihat"><i class="far fa-eye text-blue-400"></i> {{ number_format($post->views_count) }}</span>
                                 @endif
-                                <span>{{ ceil(str_word_count(strip_tags($post->isi)) / 200) }} min</span>
+                                <span class="flex items-center gap-1" title="Komentar"><i class="far fa-comment-dots text-green-400"></i> {{ number_format($post->comments_count ?? 0) }}</span>
+                                <span class="flex items-center gap-1" title="Suka"><i class="far fa-heart text-red-400"></i> {{ number_format($post->likes_count ?? 0) }}</span>
                             </div>
                         </div>
                     </div>

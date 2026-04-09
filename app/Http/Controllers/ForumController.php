@@ -63,7 +63,11 @@ class ForumController extends Controller
         return response()->json([
             'status' => 'error',
             'message' => 'Anda telah di-ban dari forum',
-            'ban' => $ban ? $this->banPayload($ban) : null,
+            'ban' => $ban ? $this->banPayload($ban) : [
+                'type' => 'temporary',
+                'reason' => 'Terkunci otomatis akibat melanggar kebijakan / laporan pengguna',
+                'expires_at' => null
+            ],
             'data' => []
         ], 403);
     }
@@ -102,7 +106,15 @@ public function sendMessage(Request $request): JsonResponse
     $user = Auth::user();
 
     if ($user->isBannedFromForum()) {
-        return response()->json(['status' => 'error', 'message' => 'Anda telah di-ban dari forum'], 403);
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Anda telah di-ban dari forum',
+            'ban' => [
+                'type' => 'temporary',
+                'reason' => 'Terkunci otomatis akibat melanggar kebijakan / laporan pengguna',
+                'expires_at' => null
+            ]
+        ], 403);
     }
 
     $settings = ForumSetting::current()->fresh();
@@ -212,7 +224,15 @@ public function sendMessage(Request $request): JsonResponse
 
         // Ban & forum tutup
         if ($user->isBannedFromForum()) {
-            return response()->json(['status' => 'error', 'message' => 'Anda telah di-ban dari forum'], 403);
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'Anda telah di-ban dari forum',
+                'ban' => [
+                    'type' => 'temporary',
+                    'reason' => 'Terkunci otomatis akibat melanggar kebijakan / laporan pengguna',
+                    'expires_at' => null
+                ]
+            ], 403);
         }
 
         $settings = ForumSetting::current();
@@ -300,7 +320,15 @@ public function sendMessage(Request $request): JsonResponse
         $user = Auth::user();
 
         if ($user->isBannedFromForum()) {
-            return response()->json(['status' => 'error', 'message' => 'Anda telah di-ban dari forum'], 403);
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'Anda telah di-ban dari forum',
+                'ban' => [
+                    'type' => 'temporary',
+                    'reason' => 'Terkunci otomatis akibat melanggar kebijakan / laporan pengguna',
+                    'expires_at' => null
+                ]
+            ], 403);
         }
         if (method_exists($poll, 'isExpired') && $poll->isExpired()) {
             return response()->json(['status' => 'error', 'message' => 'Poll sudah berakhir'], 422);
@@ -429,6 +457,25 @@ public function sendMessage(Request $request): JsonResponse
             'ip' => (string) request()->ip(),
             'user_agent' => substr((string) request()->userAgent(), 0, 255),
         ]);
+
+        // Auto-ban
+        $totalReports = $target->getTotalReportsCount();
+        if ($totalReports >= 3) {
+            $alreadyBanned = \App\Models\ForumBan::where('user_id', $target->id)
+                ->where('is_active', true)
+                ->whereNull('expires_at')
+                ->exists();
+
+            if (!$alreadyBanned) {
+                $systemAdminId = \App\Models\User::where('role_id', 1)->value('id') ?? 1;
+                \App\Models\ForumBan::create([
+                    'user_id' => $target->id,
+                    'banned_by' => $systemAdminId,
+                    'reason' => 'Auto-ban: Telah dilaporkan lebih dari 3 kali oleh pengguna lain.',
+                    'is_active' => true,
+                ]);
+            }
+        }
 
         return response()->json(['status' => 'success', 'message' => 'Laporan berhasil dikirim', 'data' => [
             'id' => $report->id,

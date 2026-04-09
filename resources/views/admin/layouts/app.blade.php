@@ -11,22 +11,275 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.tailwindcss.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/3.0.2/css/responsive.tailwindcss.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/2.0.8/js/dataTables.tailwindcss.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/3.0.2/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/3.0.2/js/responsive.tailwindcss.min.js"></script>
 
+    <style>
+        /* ─── Sidebar scroll isolation ─── */
+        #sidebar {
+            scrollbar-gutter: stable;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+        }
+
+        #sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #sidebar::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+        }
+
+        /* ─── DataTables global overrides ─── */
+        /* Top controls (length + search) */
+        div.dt-layout-row {
+            margin-bottom: 0 !important;
+        }
+
+        div.dt-layout-row:first-child {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+            padding: 0.5rem 0 0.75rem;
+        }
+
+        div.dt-length label {
+            font-size: 13px;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        div.dt-length select {
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 4px 28px 4px 8px;
+            font-size: 13px;
+            background: #fff;
+            color: #111827;
+        }
+
+        div.dt-search label {
+            font-size: 13px;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        div.dt-search input {
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-size: 13px;
+            color: #111827;
+            min-width: 200px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        div.dt-search input:focus {
+            border-color: #3b82f6;
+        }
+
+        /* Pagination */
+        div.dt-paging {
+            margin-top: 0.5rem;
+        }
+
+        div.dt-info {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
+
+        nav.dt-paging-button-container {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        button.dt-paging-button {
+            min-width: 32px;
+            height: 32px;
+            padding: 0 8px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #374151;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        button.dt-paging-button:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        button.dt-paging-button.current {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        button.dt-paging-button.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* Column header – sort icons */
+        table.dataTable thead th {
+            position: relative;
+            white-space: nowrap;
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+            padding: 10px 14px;
+            border-bottom: 2px solid #e5e7eb;
+            background: #f9fafb;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        table.dataTable thead th.dt-ordering-asc::after {
+            content: " ↑";
+            opacity: 0.6;
+            font-size: 11px;
+        }
+
+        table.dataTable thead th.dt-ordering-desc::after {
+            content: " ↓";
+            opacity: 0.6;
+            font-size: 11px;
+        }
+
+        table.dataTable thead th:not(.dt-ordering-asc):not(.dt-ordering-desc):not(.dt-no-sort)::after {
+            content: " ↕";
+            opacity: 0.3;
+            font-size: 11px;
+        }
+
+        /* Column filter row */
+        table.dataTable thead tr.dt-filter-row th {
+            padding: 6px 8px;
+            background: #fff;
+            border-bottom: 1px solid #e5e7eb;
+            cursor: default;
+        }
+
+        table.dataTable thead tr.dt-filter-row th input,
+        table.dataTable thead tr.dt-filter-row th select {
+            width: 100%;
+            padding: 4px 8px;
+            font-size: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            background: #f9fafb;
+            color: #374151;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        table.dataTable thead tr.dt-filter-row th input:focus,
+        table.dataTable thead tr.dt-filter-row th select:focus {
+            border-color: #3b82f6;
+            background: #fff;
+        }
+
+        /* Body rows */
+        table.dataTable tbody td {
+            font-size: 13px;
+            padding: 10px 14px;
+            border-bottom: 1px solid #f3f4f6;
+            vertical-align: middle;
+        }
+
+        table.dataTable tbody tr:hover td {
+            background: #f8fafc;
+        }
+
+        /* Responsive expand/collapse arrow — let DataTables handle natively */
+        table.dataTable tbody td.dtr-control {
+            cursor: pointer;
+            padding-left: 16px !important;
+            width: 30px;
+            text-align: center;
+        }
+
+        /* Responsive child row */
+        table.dataTable tbody tr.child td {
+            background: #f0f7ff;
+            padding: 12px 16px;
+        }
+
+        table.dataTable tbody tr.child ul.dtr-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            padding: 0;
+            list-style: none;
+        }
+
+        table.dataTable tbody tr.child ul.dtr-details li {
+            display: flex;
+            flex-direction: column;
+            font-size: 12px;
+        }
+
+        table.dataTable tbody tr.child ul.dtr-details li span.dtr-title {
+            font-weight: 700;
+            color: #6b7280;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.05em;
+            margin-bottom: 2px;
+        }
+
+        table.dataTable tbody tr.child ul.dtr-details li span.dtr-data {
+            color: #111827;
+        }
+
+        /* Bottom tfoot repeat */
+        table.dataTable tfoot th {
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+            padding: 10px 14px;
+            border-top: 2px solid #e5e7eb;
+            background: #f9fafb;
+        }
+    </style>
 
     @stack('styles')
 
     {{-- Optional: kirim base URL API admin forum ke JS hanya di halaman forum --}}
     @if (Route::is('admin.forum.*'))
         <script data-admin-forum-endpoints type="application/json">
-      "{{ url('/admin/forum') }}"
-    </script>
+              "{{ url('/admin/forum') }}"
+            </script>
     @endif
 </head>
 
 <body class="h-full">
-    <div class="min-h-full flex">
+    <div class="min-h-full flex" style="overflow:hidden">
 
         <!-- Backdrop (mobile only) -->
         <div id="sidebar-backdrop"
@@ -34,26 +287,27 @@
             aria-hidden="true"></div>
 
         <!-- Sidebar -->
-        <aside id="sidebar"
-            class="fixed inset-y-0 left-0 z-50 w-3/4 sm:w-80 lg:w-72
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-3/4 sm:w-80 lg:w-72
            -translate-x-full lg:translate-x-0
            transition-transform duration-300 ease-in-out
            bg-gradient-to-b from-blue-700 to-blue-600 shadow-xl ring-1 ring-black/5
            h-screen overflow-y-auto overscroll-contain
-           lg:fixed lg:inset-y-0"
-            aria-label="Sidebar" aria-hidden="true">
+           lg:fixed lg:inset-y-0" aria-label="Sidebar" aria-hidden="true">
             <div class="flex h-full flex-col">
                 <!-- Header / Brand + Close (mobile) -->
-                <div
-                    class="flex items-center justify-between px-5 h-14 lg:h-16 
-            border-b border-gray-200 bg-white">
-                    <h1 class="flex flex-row w-max text-gray-800 text-lg font-bold tracking-tight">
-                        <img class="w-12 mr-1" src="{{ asset('image/image.png') }}" alt=""> Admin PT RKA
+                <div class="flex items-center justify-between px-4 h-14 lg:h-16
+                            border-b border-blue-600/50 bg-blue-700 flex-shrink-0">
+                    <h1 class="flex items-center gap-2.5 font-bold tracking-tight text-white">
+                        <span class="flex-shrink-0 h-9 w-9 rounded-full bg-white flex items-center justify-center shadow-sm">
+                            <img class="w-7 h-7 object-contain" src="{{ asset('image/image.png') }}" alt="logo">
+                        </span>
+                        <span class="text-sm">Admin PT RKA</span>
                     </h1>
                     <button id="sidebar-close"
-                        class="lg:hidden inline-flex items-center justify-center rounded-md p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                        class="lg:hidden flex items-center justify-center rounded-lg w-8 h-8
+                               text-white/60 hover:text-white hover:bg-white/10 transition"
                         aria-label="Tutup sidebar">
-                        <i class="fa-solid fa-xmark text-xl"></i>
+                        <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
 
@@ -186,7 +440,8 @@
         </aside>
 
         <!-- Main Content -->
-        <div class="flex-1 lg:ml-72 lg:pl-0">
+        <!-- The margin-left equals the sidebar width (lg:w-72 = 18rem) so the scrollbar never overlaps -->
+        <div class="flex-1 min-w-0 lg:ml-72" style="overflow-y:auto; height:100vh;">
             <!-- Top Navbar -->
             <div
                 class="sticky top-0 z-30 flex h-16 items-center gap-x-4 border-b bg-white px-4 shadow-sm sm:px-6 lg:px-8">

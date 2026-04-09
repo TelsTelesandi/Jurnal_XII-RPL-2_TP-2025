@@ -16,7 +16,7 @@
   $numbers = [
     'users_total'        => (int) ($m['users_total'] ?? 0),
     'articles_total'     => (int) ($m['articles_total'] ?? 0),
-    'topics_total'       => (int) ($m['topics_total'] ?? 0),
+
     'comments_pending'   => (int) ($m['comments_pending'] ?? 0),
     'forum_interactions' => (int) ($m['forum_interactions'] ?? 0),
   ];
@@ -80,7 +80,7 @@
       $cards = [
         ['label'=>'Total Users',        'key'=>'users_total',        'icon'=>'fas fa-users',          'from'=>'from-indigo-500 to-blue-500'],
         ['label'=>'Total Artikel',      'key'=>'articles_total',     'icon'=>'fas fa-newspaper',      'from'=>'from-green-500 to-emerald-500'],
-        ['label'=>'Forum Topics',       'key'=>'topics_total',       'icon'=>'fas fa-comments',       'from'=>'from-yellow-500 to-amber-500'],
+     
         ['label'=> $labelComments,      'key'=>'comments_pending',   'icon'=>'fas fa-clipboard-list', 'from'=>'from-rose-500 to-red-500'],
         ['label'=>'Forum Interactions', 'key'=>'forum_interactions', 'icon'=>'fas fa-hand-pointer',   'from'=>'from-violet-500 to-purple-500'],
       ];
@@ -115,10 +115,7 @@
               <a href="{{ route('admin.blog.index', [], false) }}" class="text-green-700 hover:text-green-900 block truncate">Kelola Artikel</a>
             </div>
           @break
-          @case('topics_total')
-            <div class="border-t bg-gray-50/60 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm">
-              <a href="{{ route('admin.forum.index', [], false) }}" class="text-yellow-700 hover:text-yellow-900 block truncate">Kelola Forum</a>
-            </div>
+          
           @break
           @case('comments_pending')
             <div class="border-t bg-gray-50/60 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm">

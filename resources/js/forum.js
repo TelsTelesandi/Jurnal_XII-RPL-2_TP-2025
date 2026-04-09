@@ -109,7 +109,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (chip) reactToMessage(chip.dataset.messageId, chip.dataset.emoji);
     });
 
-    // === Moderation row (Kick / Ban) di context menu ===
     async function fetchBanAware(url, options = {}) {
         const res = await fetch(url, {
             credentials: "same-origin",
@@ -121,18 +120,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 data = await res.json();
             } catch {}
             if (data?.ban) {
-                const b = data.ban;
-                const msg =
-                    b.type === "permanent"
-                        ? `Anda diban permanen. Alasan: ${b.reason ?? "-"}`
-                        : `Anda diban (${b.type}). Sisa: ${formatDuration(
-                              b.remaining_seconds
-                          )}. Berakhir: ${b.expires_at_local}`;
-                alert(msg); // ganti dengan modal UI kamu
-                // optional: redirect ke halaman login/home
-                location.href = "/";
-            } else if (data?.message) {
-                alert(data.message);
+                applyAccessState({
+                    moderation: ACCESS.MOD_BANNED,
+                    until: data.ban.expires_at,
+                    reason: data.ban.reason,
+                });
+                throw new Error("BANNED");
             }
         }
         return res;
@@ -1431,158 +1424,55 @@ document.addEventListener("visibilitychange", () => {
 
     let accessTimer = null; // untuk countdown
 
-    function ensureAccessOverlay() {
-        let ov = document.getElementById("access-overlay");
-        if (ov) return ov;
-
-        ov = document.createElement("div");
-        ov.id = "access-overlay";
-        ov.className = `
-    hidden fixed inset-0 z-50
-    bg-white/70 backdrop-blur-sm
-    flex items-center justify-center
-  `;
-        ov.innerHTML = `
-    <div class="max-w-md w-[92%] rounded-2xl shadow-xl bg-white border border-gray-200 p-5 text-center">
-      <div id="access-icon" class="mx-auto mb-3 w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center">
-        <svg class="w-6 h-6 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M12 9v2m0 4h.01M5.07 19h13.86A2 2 0 0021 17.13L13.93 4.87a2 2 0 00-3.86 0L3 17.13A2 2 0 005.07 19z"/>
-        </svg>
-      </div>
-      <h3 id="access-title" class="text-lg font-semibold mb-1">Akses terkunci</h3>
-      <p id="access-desc" class="text-sm text-gray-600 mb-4">Silakan login untuk melanjutkan.</p>
-      <div id="access-cta" class="flex items-center justify-center gap-2"></div>
-    </div>
-  `;
-        document.body.appendChild(ov);
-        return ov;
-    }
-
-    function blurLock(enable) {
-        // elemen-elemen utama aplikasi
-        forumWidget.classList.toggle("pointer-events-none", !!enable);
-        forumWidget.classList.toggle("blur-[1.5px]", !!enable);
-        // izinkan scroll container luar supaya overlay bisa klik
-    }
-
-    function formatCountdown(ms) {
-        if (ms <= 0) return "sebentar lagi…";
-        const s = Math.floor(ms / 1000);
-        const hh = Math.floor(s / 3600);
-        const mm = Math.floor((s % 3600) / 60);
-        const ss = s % 60;
-        if (hh > 0) return `${hh}j ${mm}m ${ss}d`;
-        if (mm > 0) return `${mm}m ${ss}d`;
-        return `${ss}d`;
-    }
-
-    /**
-     * state: {
-     *   auth: "auth_guest" | "auth_ok",
-     *   moderation: "mod_ok" | "mod_kicked" | "mod_banned",
-     *   until?: number|Date|null,  // kapan berakhir (ms epoch)
-     *   reason?: string
-     * }
-     */
     function applyAccessState(state) {
-        const ov = ensureAccessOverlay();
-        const title = ov.querySelector("#access-title");
-        const desc = ov.querySelector("#access-desc");
-        const cta = ov.querySelector("#access-cta");
-        const icon = ov.querySelector("#access-icon");
+        const banner = document.getElementById("inline-access-banner");
+        const bannerText = document.getElementById("inline-access-text");
+        const bannerLink = document.getElementById("inline-access-link");
+        const inputContainer = document.getElementById("forum-input-container");
 
-        // bersihkan timer lama
-        if (accessTimer) {
-            clearInterval(accessTimer);
-            accessTimer = null;
-        }
+        if (!banner || !bannerText || !bannerLink) return;
 
         // default: tidak terkunci
-        if (
-            state.auth === ACCESS.AUTH_OK &&
-            state.moderation === ACCESS.MOD_OK
-        ) {
-            ov.classList.add("hidden");
-            blurLock(false);
+        if (state.auth === ACCESS.AUTH_OK && state.moderation === ACCESS.MOD_OK) {
+            banner.classList.add("hidden");
+            if (inputContainer) inputContainer.classList.remove("hidden", "pointer-events-none", "opacity-50");
             return;
         }
 
         // terkunci
-        ov.classList.remove("hidden");
-        blurLock(true);
-
-        // reset CTA
-        cta.innerHTML = "";
+        banner.classList.remove("hidden");
+        bannerLink.classList.add("hidden");
+        banner.classList.remove("bg-red-600", "bg-amber-600");
+        
+        // Sembunyikan container input atau buat transparan
+        if (inputContainer) {
+            inputContainer.classList.add("pointer-events-none", "opacity-50");
+        }
 
         // Belum login
         if (state.auth === ACCESS.AUTH_GUEST) {
-            title.textContent = "Akses terkunci";
-            desc.textContent = "Silakan login untuk membuka forum.";
-            const btn = document.createElement("button");
-            btn.className =
-                "px-4 py-2 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700";
-            btn.textContent = "Login";
-            btn.onclick = () => {
-                window.location.href =
-                    "/login?next=" +
-                    encodeURIComponent(location.pathname + location.search);
-            };
-            cta.appendChild(btn);
-            icon.className =
-                "mx-auto mb-3 w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center";
+            banner.classList.add("bg-amber-600");
+            bannerText.textContent = "Silakan login untuk mengirim pesan.";
             return;
         }
 
         // Kicked (sementara)
         if (state.moderation === ACCESS.MOD_KICKED) {
-            title.textContent = "Sementara dikeluarkan (Kick)";
-            const until = state.until ? new Date(state.until).getTime() : null;
-            const reason = state.reason
-                ? `Alasan: ${state.reason}`
-                : "Tunggu sebentar sebelum mencoba lagi.";
-            const cd = document.createElement("div");
-            cd.id = "kick-countdown";
-            cd.className = "mt-2 font-semibold text-gray-800";
-            desc.innerHTML = `${reason}`;
-            cta.appendChild(cd);
-            icon.className =
-                "mx-auto mb-3 w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center";
-
-            const update = () => {
-                const now = Date.now();
-                const remain = (until ?? now) - now;
-                if (remain <= 0) {
-                    cd.textContent = "Selesai. Muat ulang…";
-                    setTimeout(() => location.reload(), 800);
-                } else {
-                    cd.textContent = "Sisa waktu: " + formatCountdown(remain);
-                }
-            };
-            update();
-            accessTimer = setInterval(update, 1000);
+            banner.classList.add("bg-red-600");
+            bannerText.textContent = "Akun Anda dikeluarkan sementara.";
             return;
         }
 
         // Banned
         if (state.moderation === ACCESS.MOD_BANNED) {
-            title.textContent = "Akun diblokir";
-            const until = state.until ? new Date(state.until).getTime() : null;
-            const reason = state.reason
-                ? `<span class="block">Alasan: ${state.reason}</span>`
-                : "";
-            const when = until
-                ? `Hingga: ${new Date(until).toLocaleString()}`
-                : "Durasi: permanen";
-            desc.innerHTML = `${reason}${when}`;
-            const help = document.createElement("a");
-            help.href = "/appeal";
-            help.className =
-                "px-4 py-2 rounded-xl bg-gray-900 text-white font-medium hover:bg-gray-800";
-            help.textContent = "Ajukan banding";
-            cta.appendChild(help);
-            icon.className =
-                "mx-auto mb-3 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center";
+            banner.classList.add("bg-red-600");
+            bannerText.textContent = "Akun Anda diblokir dari forum.";
+            bannerLink.href = "#"; // Prevent default anchor behavior
+            bannerLink.onclick = (e) => {
+                e.preventDefault();
+                window.open("https://mail.google.com/mail/?view=cm&fs=1&to=keciltikus29@gmail.com&su=Banding%20Akun%20Forum", "_blank");
+            };
+            bannerLink.classList.remove("hidden");
             return;
         }
     }
@@ -1747,6 +1637,12 @@ for (const msg of messagesAsc) {
             }
         } catch (err) {
             console.error("Error loadMessages:", err);
+            hideRefresh();
+            if (err.message === "BANNED" || err.message === "KICKED") {
+                ensureContainers();
+                messagesListEl.innerHTML = `<div class="flex items-center justify-center h-full"><p class="text-gray-500 text-sm font-medium mt-10">Pesan tidak tersedia saat akun dibatasi.</p></div>`;
+                return;
+            }
             ensureContainers();
             messagesListEl.innerHTML = `<p class="text-red-500 text-sm text-center">Gagal memuat pesan</p>`;
         } finally {
@@ -2168,6 +2064,7 @@ for (const msg of messagesAsc) {
         class="max-w-[220px] rounded-lg cursor-pointer"
         onclick="window.open('${msg.attachment_url}', '_blank')"
       >
+      ${msg.message ? `<p class="mt-2 text-[13px] leading-relaxed break-words">${escapeHtml(msg.message)}</p>` : ''}
     </div>`;
   break;
    case "video": {
@@ -2179,6 +2076,7 @@ for (const msg of messagesAsc) {
       <video controls playsinline preload="metadata" class="max-w-[220px] rounded-lg" src="${url}">
         <source src="${url}" type="${mime}">
       </video>
+      ${msg.message ? `<p class="mt-2 text-[13px] leading-relaxed break-words">${escapeHtml(msg.message)}</p>` : ''}
     </div>`;
   break;
 }
@@ -2237,6 +2135,7 @@ for (const msg of messagesAsc) {
            Save as…
         </a>
       </div>
+      ${msg.message ? `<div class="px-3 pb-3"><p class="text-[13px] leading-relaxed break-words">${escapeHtml(msg.message)}</p></div>` : ''}
     </div>`;
                 break;
             }
@@ -2272,6 +2171,7 @@ for (const msg of messagesAsc) {
       <!-- Timer -->
       <span class="vn-current shrink-0 text-[12px] leading-none tabular-nums text-gray-600">0:00</span>
     </div>
+    ${msg.message ? `<p class="px-1 mt-1 text-[13px] leading-relaxed break-words block">${escapeHtml(msg.message)}</p>` : ''}
   `;
   break;
 }
@@ -2508,9 +2408,16 @@ function telHref(num) {
 
     // Reset tombol kirim ke mode "voice"
     function resetButtonState() {
-        iconVoice.classList.remove("hidden");
-        iconSend.classList.add("hidden");
-        sendBtn.dataset.mode = "voice";
+        const isVoiceAllowed = document.getElementById("forum-widget")?.dataset.allowVoice === 'true';
+        if (isVoiceAllowed && iconVoice && iconSend) {
+            iconVoice.classList.remove("hidden");
+            iconSend.classList.add("hidden");
+            sendBtn.dataset.mode = "voice";
+        } else if (iconVoice && iconSend) {
+            iconVoice.classList.add("hidden");
+            iconSend.classList.remove("hidden");
+            sendBtn.dataset.mode = "send";
+        }
     }
 
     // Update tampilan tombol kirim

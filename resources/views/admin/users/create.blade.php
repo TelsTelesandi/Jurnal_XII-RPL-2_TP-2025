@@ -97,9 +97,9 @@
         <select name="role_id" 
                 class="pl-10 pr-3 py-2 block w-full rounded-md border-gray-300 shadow-sm 
                        focus:border-indigo-500 focus:ring focus:ring-indigo-200 sm:text-sm" required>
-            <option value="1" {{ $user->role_id == 1 ? 'selected' : '' }}>Admin</option>
-            <option value="2" {{ $user->role_id == 2 ? 'selected' : '' }}>User</option>
-            <option value="3" {{ $user->role_id == 3 ? 'selected' : '' }}>Moderator</option>
+            <option value="1" {{ old('role_id') == 1 ? 'selected' : '' }}>Admin</option>
+            <option value="2" {{ old('role_id') == 2 ? 'selected' : '' }}>User</option>
+            <option value="3" {{ old('role_id') == 3 ? 'selected' : '' }}>Moderator</option>
         </select>
     </div>
 </div>

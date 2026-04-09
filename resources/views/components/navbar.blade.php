@@ -16,7 +16,7 @@
                                     <div class="relative">
                                         <img src="{{ asset('image/image.png') }}" alt="Logo" class="h-10 w-auto">
                                     </div>
-                                    <span class="text-lg font-bold text-gray-900 tracking-wide">
+                                    <span class="text-lg font-bold text-gray-900 tracking-wide whitespace-nowrap">
                                         Rekan Kinerja Abadi
                                     </span>
                                 </div>
@@ -62,7 +62,7 @@
       <div class="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"></div>
 
       <!-- Text -->
-      <span class="relative z-10 {{ ($isHelp && request()->routeIs('bantuan')) ? 'text-blue-600' : '' }}">
+      <span class="relative z-10 whitespace-nowrap {{ ($isHelp && request()->routeIs('bantuan')) ? 'text-blue-600' : '' }}">
         {{ $menu }}
       </span>
 
@@ -80,23 +80,46 @@
                                 <div class="ml-6 pl-6 border-l border-gray-300 h-16 flex items-center">
                                     <!-- <= h-16 + center -->
                                     @auth
-                                        <form method="POST" action="{{ route('logout') }}"
-                                            class="flex items-center h-full">
-                                            @csrf
-                                           <button type="submit" 
-    class="inline-flex items-center px-5 py-2.5
-           bg-red-600 hover:bg-red-700 text-white font-medium
-           rounded-lg shadow transition duration-300
-           {{ request()->is('/') ? 'translate-y-[9px]' : '' }}">
-    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-    </svg>
-    Logout
-</button>
-
-
-                                        </form>
+                                        <div class="relative group">
+                                            <button type="button" class="flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg p-2 hover:bg-gray-100 transition">
+                                                <img class="h-8 w-8 rounded-full border border-gray-200 object-cover" 
+                                                     src="{{ auth()->user()->profile_photo_path ? asset('storage/' . auth()->user()->profile_photo_path) : 'https://ui-avatars.com/api/?name='.urlencode(auth()->user()->name).'&color=7F9CF5&background=EBF4FF' }}" 
+                                                     alt="{{ auth()->user()->name }}">
+                                                <span class="text-sm font-medium text-gray-700 hidden sm:block truncate max-w-[120px] xl:max-w-[200px]">{{ auth()->user()->name }}</span>
+                                                <svg class="w-4 h-4 text-gray-500 ml-1 flex-shrink-0 transform group-hover:-rotate-180 transition duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                </svg>
+                                            </button>
+                                            
+                                            <!-- Dropdown menu -->
+                                            <div class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out z-50 transform origin-top-right scale-95 group-hover:scale-100">
+                                                <div class="py-2">
+                                                    <div class="px-4 py-3 border-b border-gray-100">
+                                                        <p class="text-sm leading-5">Masuk sebagai</p>
+                                                        <p class="text-sm font-medium leading-5 text-gray-900 truncate">{{ auth()->user()->name }}</p>
+                                                    </div>
+                                                    
+                                                    @if(auth()->user()->role_id == 1)
+                                                    <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 hover:bg-gray-50 text-gray-700 text-sm w-full text-left transition flex items-center">
+                                                        <i class="fas fa-solar-panel w-5 text-gray-400"></i> Admin Panel
+                                                    </a>
+                                                    @endif
+                                                    
+                                                    <a href="{{ route('profile.edit') }}" class="block px-4 py-2 hover:bg-gray-50 text-gray-700 text-sm w-full text-left transition flex items-center">
+                                                        <i class="fas fa-user-circle w-5 text-gray-400"></i> Pengaturan Profil
+                                                    </a>
+                                                    
+                                                    <div class="border-t border-gray-100 my-1"></div>
+                                                    
+                                                    <form method="POST" action="{{ route('logout') }}">
+                                                        @csrf
+                                                        <button type="submit" class="block px-4 py-2 hover:bg-red-50 text-red-600 text-sm w-full text-left transition flex items-center">
+                                                            <i class="fas fa-sign-out-alt w-5"></i> Logout
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
                                     @else
                                         <a href="{{ route('login') }}"
                                             class="inline-flex h-12 items-center px-6
@@ -199,16 +222,30 @@
                         <!-- Mobile Login/Logout Button -->
                         <div class="px-6 pt-6 mt-6 border-t border-gray-100">
                             @auth
+                                <div class="mb-4 flex items-center space-x-4 bg-gray-50 p-4 rounded-xl border border-gray-100 shadow-sm">
+                                    <img class="h-12 w-12 rounded-full border-2 border-white shadow-sm object-cover" 
+                                         src="{{ auth()->user()->profile_photo_path ? asset('storage/' . auth()->user()->profile_photo_path) : 'https://ui-avatars.com/api/?name='.urlencode(auth()->user()->name).'&color=7F9CF5&background=EBF4FF' }}" 
+                                         alt="{{ auth()->user()->name }}">
+                                    <div>
+                                        <p class="text-sm font-bold text-gray-900 truncate max-w-[200px]" title="{{ auth()->user()->name }}">{{ auth()->user()->name }}</p>
+                                        <a href="{{ route('profile.edit') }}" class="text-xs text-blue-600 hover:text-blue-800 font-medium inline-flex items-center mt-1">
+                                            <i class="fas fa-cog mr-1"></i> Edit Profil
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                                @if(auth()->user()->role_id == 1)
+                                <a href="{{ route('admin.dashboard') }}"
+                                    class="flex items-center justify-center w-full px-6 py-3 mb-3 bg-gray-800 hover:bg-gray-900 text-white font-semibold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 hover:-translate-y-1">
+                                    <i class="fas fa-solar-panel mr-2"></i> Admin Panel
+                                </a>
+                                @endif
+                                
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
                                     <button type="submit"
                                         class="flex items-center justify-center w-full px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 hover:-translate-y-1">
-                                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                        </svg>
-                                        Logout
+                                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
                                     </button>
                                 </form>
                             @else

@@ -42,7 +42,7 @@ class BlogController extends Controller
             $query->whereHas('category', fn($c) => $c->where('slug', $cat));
         }
 
-        $query->withCount('comments');
+        $query->withCount(['comments', 'likes']);
 
         // Sort: ?sort=terlama|populer|banyak-komentar|terbaru(default)
         switch ($request->get('sort')) {
@@ -96,6 +96,7 @@ class BlogController extends Controller
             // (Opsional) Increment views_count jika kolom ada
             if (Schema::hasColumn('blog_posts', 'views_count')) {
                 $post->increment('views_count');
+                Cache::forget('home_latest_posts_v2'); // Sinkronisasi cache beranda
             }
 
             return true;
@@ -105,14 +106,17 @@ class BlogController extends Controller
             ->whereNotNull('published_at')
             ->where('published_at', '<=', now())
             ->latest('published_at')
-            ->take(4)
-            ->get();
+            ->paginate(6, ['*'], 'page');
 
         return view('sections.blog-show', compact('post', 'relatedPosts'));
     }
 
    public function storeComment(Request $request, BlogPost $post)
 {
+    if (Auth::check() && Auth::user()->isBannedFromForum()) {
+        return back()->with('error', 'Akun Anda telah diblokir. Silakan hubungi admin untuk mengajukan banding.');
+    }
+
     $request->validate([
         'comment' => ['required', 'string', 'max:1000', new NoProfanity()],
     ], [
@@ -130,6 +134,109 @@ class BlogController extends Controller
         'isi' => $censoredComment,
     ]);
 
+    Cache::forget('home_latest_posts_v2'); // Sinkronisasi cache beranda
+
     return back()->with('success', 'Komentar berhasil ditambahkan!');
 }
+
+    // Toggle like postingan (seperti IG/TikTok)
+    public function toggleLike(Request $request, BlogPost $post)
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
+        $like = \App\Models\BlogLike::where('user_id', $user->id)
+            ->where('blog_post_id', $post->id)
+            ->first();
+
+        if ($like) {
+            $like->delete();
+            $status = 'unliked';
+        } else {
+            \App\Models\BlogLike::create([
+                'user_id' => $user->id,
+                'blog_post_id' => $post->id,
+            ]);
+            $status = 'liked';
+        }
+
+        $likesCount = \App\Models\BlogLike::where('blog_post_id', $post->id)->count();
+
+        Cache::forget('home_latest_posts_v2'); // Sinkronisasi cache beranda
+
+        return response()->json([
+            'status' => $status,
+            'likes_count' => $likesCount
+        ]);
+    }
+
+    // Melaporkan komentar
+    public function reportComment(Request $request, BlogComment $comment)
+    {
+        $request->validate([
+            'reason' => 'required|string|max:255',
+        ]);
+
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
+        // Perlindungan terhadap Admin & Moderator
+        if ($comment->user && in_array($comment->user->role_id, [1, 3])) {
+            return response()->json(['status' => 'error', 'message' => 'Tidak dapat melaporkan Admin atau Moderator.']);
+        }
+
+        $existing = \App\Models\BlogCommentReport::where('reporter_id', $user->id)
+            ->where('comment_id', $comment->id)
+            ->first();
+
+        if ($existing) {
+            return response()->json(['status' => 'error', 'message' => 'Anda sudah melaporkan komentar ini!']);
+        }
+
+        \App\Models\BlogCommentReport::create([
+            'reporter_id' => $user->id,
+            'comment_id' => $comment->id,
+            'reason' => $request->reason,
+        ]);
+
+        $reportCount = \App\Models\BlogCommentReport::where('comment_id', $comment->id)->count();
+
+        // Hapus komentar otomatis jika mencapai 3 laporan pada satu komentar
+        if ($reportCount >= 3) {
+            $comment->delete();
+        }
+
+        // Auto-Ban jika total laporan seumur hidup user ini mencapai 3
+        if ($comment->user_id) {
+            $targetUser = \App\Models\User::find($comment->user_id);
+            if ($targetUser) {
+                $totalUserReports = $targetUser->getTotalReportsCount();
+
+                if ($totalUserReports >= 3) {
+                    $alreadyBanned = \App\Models\ForumBan::where('user_id', $targetUser->id)
+                        ->where('is_active', true)
+                        ->whereNull('expires_at')
+                        ->exists();
+
+                    if (!$alreadyBanned) {
+                        $systemAdminId = \App\Models\User::where('role_id', 1)->value('id') ?? 1;
+                        \App\Models\ForumBan::create([
+                            'user_id' => $targetUser->id,
+                            'banned_by' => $systemAdminId,
+                            'reason' => 'Auto-ban: Telah dilaporkan lebih dari 3 kali oleh pengguna lain.',
+                            'is_active' => true,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return response()->json(['status' => 'success']);
+    }
 }

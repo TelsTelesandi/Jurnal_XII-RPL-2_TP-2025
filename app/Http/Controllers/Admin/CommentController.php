@@ -14,7 +14,7 @@ class CommentController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = BlogComment::with(['user', 'post'])->latest();
+        $query = BlogComment::withTrashed()->with(['user', 'post'])->withCount('reports')->latest();
 
         // Search
         if ($search = $request->get('search')) {
@@ -43,5 +43,14 @@ class CommentController extends Controller
 
         return redirect()->route('admin.comments.index')
             ->with('success', 'Komentar berhasil dihapus!');
+    }
+    public function clear()
+    {
+        // Hapus reports dulu menghindari foreign key constraint error
+        \App\Models\BlogCommentReport::query()->delete();
+        BlogComment::query()->delete();
+
+        return redirect()->route('admin.comments.index')
+            ->with('success', 'Semua komentar berhasil dihapus secara permanen!');
     }
 }

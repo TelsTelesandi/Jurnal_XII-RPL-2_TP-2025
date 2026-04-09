@@ -14,7 +14,11 @@ class AuthenticatedSessionController extends Controller
      */
     public function create()
     {
-        return view('auth.login');
+        return response()->view('auth.login')->withHeaders([
+            'Cache-Control' => 'no-cache, no-store, max-age=0, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ]);
     }
 
     /**

@@ -1,17 +1,34 @@
 <x-guest-layout>
-    <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-md w-full space-y-8">
+    <style>
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        .delay-100 { animation-delay: 100ms; }
+        .delay-200 { animation-delay: 200ms; }
+    </style>
+    <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-100 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        <!-- Decoration background elements -->
+        <div class="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-blue-400 opacity-10 blur-3xl"></div>
+        <div class="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 rounded-full bg-indigo-500 opacity-10 blur-3xl"></div>
+        
+        <div class="max-w-md w-full space-y-8 z-10">
             <!-- Header Section -->
             <div class="text-center">
-                <div class="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg">
-                    <x-authentication-card-logo class="w-8 h-8 text-white" />
+                <div class="flex justify-center mb-6 animate-fade-in-up">
+                    <img src="{{ setting('site_logo') ? asset('storage/'.setting('site_logo')) : asset('image/image.png') }}" 
+                         alt="Logo PT RKA" 
+                         class="h-24 w-auto drop-shadow-2xl hover:scale-105 transition-transform duration-300">
                 </div>
-                <h2 class="mt-6 text-3xl font-bold text-gray-900">Buat akun Anda</h2>
-                <p class="mt-2 text-sm text-gray-600">Bergabung dan mulai sekarang</p>
+                <h2 class="text-3xl font-extrabold text-gray-900 tracking-tight animate-fade-in-up delay-100">Buat Akun Anda</h2>
+                <p class="mt-2 text-sm text-gray-500 font-medium animate-fade-in-up delay-200">Bergabung dan nikmati semua layanannya</p>
             </div>
 
             <!-- Main Form Card -->
-            <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+            <div class="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white animate-fade-in-up delay-200">
                 <x-validation-errors class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700" />
 
                 <form method="POST" action="{{ route('register') }}" class="space-y-6">

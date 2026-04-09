@@ -1,6 +1,12 @@
 
 {{-- resources/views/components/forum-widget.blade.php --}}
 <div>
+@php
+    $canModerate = auth()->check() && (method_exists(auth()->user(), 'canModerateForum') ? auth()->user()->canModerateForum() : in_array(auth()->user()->role_id, [1, 3]));
+    $showAttachments = ($settings->allow_attachments ?? true) || $canModerate;
+    $showPolls = ($settings->allow_polls ?? true) || $canModerate;
+    $showVoice = ($settings->allow_voice ?? true) || $canModerate;
+@endphp
     <!-- Floating Open Button (WA style) -->
     <div class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 group">
   <button id="open-forum"
@@ -22,6 +28,7 @@
 </div>
     <!-- Forum Widget -->
     <div id="forum-widget"
+        data-allow-voice="{{ $showVoice ? 'true' : 'false' }}"
         class="fixed inset-x-3 bottom-20 top-20 sm:bottom-20 sm:top-auto sm:right-6 sm:left-auto
          sm:w-[28rem] md:w-[32rem] lg:w-[30rem] 
          sm:h-[640px] md:h-[720px] lg:h-[650px]
@@ -44,6 +51,14 @@
                     ✕
                 </button>
             </div>
+        </div>
+
+        <!-- Inline Banned Notification -->
+        <div id="inline-access-banner" class="hidden bg-red-600 text-white px-3 sm:px-4 py-2 text-xs sm:text-sm flex justify-between items-center z-10 w-full relative border-b border-red-700">
+            <span id="inline-access-text" class="flex-1 font-medium">Akun Anda diblokir dari forum.</span>
+            <a id="inline-access-link" href="#" target="_blank" class="ml-2 px-3 py-1 bg-white text-red-600 rounded-lg text-xs font-bold hover:bg-gray-100 transition whitespace-nowrap hidden shadow-sm">
+                Banding
+            </a>
         </div>
 
         <!-- Chat Messages (WA paper background) -->
@@ -80,6 +95,7 @@
         </div>
 
    <!-- RECORDING BAR -->
+@if($showVoice)
 <div id="voice-recording" class="hidden w-full px-3 py-2 rounded-xl border bg-white shadow items-center gap-3">
   <!-- kiri: hapus -->
   <button id="btn-voice-discard" class="p-2 rounded-lg hover:bg-gray-100" title="Batalkan">
@@ -118,12 +134,14 @@
   ➤
 </button>
 </div>
+@endif
 
         <!-- Input Area (WA-style row) -->
-        <div class="bg-[#ECE5DD] p-2  shadow-[inset_0_4px_6px_rgba(0,0,0,0.15)]">
+        <div id="forum-input-container" class="bg-[#ECE5DD] p-2  shadow-[inset_0_4px_6px_rgba(0,0,0,0.15)]">
             <!-- Attachment menu -->
             <div id="attachment-menu" class="hidden bg-white rounded-lg px-2 py-2 border mx-1 max-h-24 overflow-y-auto">
                 <div class="grid grid-cols-5 sm:grid-cols-6 gap-1.5 sm:gap-2 text-center">
+                    @if($showAttachments)
                     <button type="button" id="btn-document"
                         class="flex flex-col items-center p-2 hover:bg-gray-100 rounded-lg transition-colors">
                         <svg class="w-6 h-6 text-blue-600 mb-1" fill="none" stroke="currentColor"
@@ -153,6 +171,7 @@
                         </svg>
                         <span class="text-[11px]">Camera</span>
                     </button>
+                    @endif
 
                     <button type="button" id="btn-contact"
                         class="flex flex-col items-center p-2 hover:bg-gray-100 rounded-lg transition-colors">
@@ -174,6 +193,8 @@
                         </svg>
                         <span class="text-[11px]">Location</span>
                     </button>
+                    
+                    @if($showPolls)
                     <button type="button" id="btn-poll"
                         class="flex flex-col items-center p-2 hover:bg-gray-100 rounded-lg transition-colors">
                         <svg class="w-6 h-6 text-indigo-600 mb-1" fill="none" stroke="currentColor"
@@ -183,6 +204,7 @@
                         </svg>
                         <span class="text-[11px]">Poll</span>
                     </button>
+                    @endif
                 </div>
             </div>
 
@@ -217,15 +239,15 @@
                 <!-- Send / Voice (auto toggled by JS) -->
                 <button type="button" id="send-button"
                     class="bg-[#25D366] text-white p-2.5 sm:p-3 rounded-full hover:bg-[#1ec257] transition-colors flex items-center justify-center min-w-[44px] min-h-[44px] sm:min-w-[48px] sm:min-h-[48px] flex-shrink-0"
-                    data-mode="voice">
+                    data-mode="{{ $showVoice ? 'voice' : 'send' }}">
                     <!-- Mic -->
-                    <svg id="icon-voice" class="w-5 h-5 sm:w-5 sm:h-5" fill="none" stroke="currentColor"
+                    <svg id="icon-voice" class="w-5 h-5 sm:w-5 sm:h-5 {{ $showVoice ? '' : 'hidden' }}" fill="none" stroke="currentColor"
                         viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                     </svg>
                     <!-- Send -->
-                    <svg id="icon-send" class="w-5 h-5 sm:w-5 sm:h-5 hidden" fill="none" stroke="currentColor"
+                    <svg id="icon-send" class="w-5 h-5 sm:w-5 sm:h-5 {{ $showVoice ? 'hidden' : '' }}" fill="none" stroke="currentColor"
                         viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

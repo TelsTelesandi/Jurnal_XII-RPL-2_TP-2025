@@ -8,139 +8,167 @@
 
     <!-- Header -->
     <div class="flex flex-col md:flex-row justify-between md:items-center gap-4">
-        <h2 class="text-2xl font-bold text-gray-800">💬 Kelola Komentar</h2>
+        <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <i class="fas fa-comments text-blue-600"></i> Kelola Komentar
+        </h2>
+        @if($comments->total() > 0)
+        <form action="{{ route('admin.comments.clear') }}" method="POST" onsubmit="return confirm('APAKAH ANDA YAKIN INGIN MENGHAPUS SEMUA KOMENTAR? Tindakan ini tidak dapat dibatalkan!');  ">
+            @csrf
+            <button type="submit" class="w-full sm:w-auto px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-sm hover:bg-red-700 transition flex items-center justify-center gap-2">
+                <i class="fas fa-trash-alt"></i> Hapus Semua Komentar
+            </button>
+        </form>
+        @endif
     </div>
 
     <!-- Statistik -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div class="bg-white p-5 rounded-lg shadow flex flex-col">
-        <span class="text-sm text-gray-500">Total Komentar</span>
-        <span class="text-2xl font-bold text-blue-600">{{ $comments->total() }}</span>
-    </div>
-    <div class="bg-white p-5 rounded-lg shadow flex flex-col">
-        <span class="text-sm text-gray-500">Komentar Hari Ini</span>
-        <span class="text-2xl font-bold text-green-600">{{ \App\Models\BlogComment::whereDate('created_at', today())->count() }}</span>
-    </div>
-</div>
-
-
-    <!-- Pencarian -->
-    <div class="bg-white p-4 rounded-lg shadow">
-        <form method="GET" action="{{ route('admin.comments.index') }}" 
-              class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <input type="text" name="search" value="{{ request('search') }}"
-                   placeholder="🔍 Cari komentar, nama user, atau judul artikel..."
-                   class="flex-1 px-4 py-2 border border-gray-300 rounded-md 
-                          focus:ring focus:ring-blue-200 focus:outline-none">
-            <button type="submit" 
-                    class="px-4 py-2 bg-blue-600 text-white rounded-md shadow 
-                           hover:bg-blue-700 transition w-full sm:w-auto">
-                Cari
-            </button>
-        </form>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 transition hover:shadow-md">
+            <div class="h-12 w-12 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xl shadow-inner">
+                <i class="fas fa-comment-dots"></i>
+            </div>
+            <div>
+                <span class="text-xs text-gray-500 font-medium uppercase tracking-wider block">Total Komentar</span>
+                <span class="text-2xl font-bold text-gray-900">{{ number_format($comments->total()) }}</span>
+            </div>
+        </div>
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 transition hover:shadow-md">
+            <div class="h-12 w-12 rounded-lg bg-green-50 text-green-600 flex items-center justify-center text-xl shadow-inner">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div>
+                <span class="text-xs text-gray-500 font-medium uppercase tracking-wider block">Komentar Hari Ini</span>
+                <span class="text-2xl font-bold text-gray-900">{{ number_format(\App\Models\BlogComment::whereDate('created_at', today())->count()) }}</span>
+            </div>
+        </div>
     </div>
 
-    <!-- Komentar List -->
-    <div class="bg-white shadow rounded-lg overflow-hidden">
-        <!-- Desktop Table -->
-        <div class="hidden md:block overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 text-sm">
-                <thead class="bg-gray-50">
+    <!-- DataTable -->
+    <div class="bg-white shadow-sm border border-gray-100 rounded-xl overflow-hidden p-4 sm:p-6">
+        <div class="overflow-x-auto">
+            <table id="comments-table" class="min-w-full text-sm" style="width:100%">
+                <thead>
                     <tr>
-                        <th class="px-6 py-3 text-left font-semibold text-gray-600">User</th>
-                        <th class="px-6 py-3 text-left font-semibold text-gray-600">Isi</th>
-                        <th class="px-6 py-3 text-left font-semibold text-gray-600">Artikel</th>
-                        <th class="px-6 py-3 text-right font-semibold text-gray-600">Aksi</th>
+                        {{-- col 0: dtr-control expand --}}
+                        <th></th>
+                        {{-- col 1 --}}<th class="px-4 py-3 text-left font-semibold text-gray-600">Pengirim</th>
+                        {{-- col 2 --}}<th class="px-4 py-3 text-left font-semibold text-gray-600">Isi Komentar</th>
+                        {{-- col 3 --}}<th class="px-4 py-3 text-left font-semibold text-gray-600">Artikel</th>
+                        {{-- col 4 --}}<th class="px-4 py-3 text-left font-semibold text-gray-600">Waktu</th>
+                        {{-- col 5 --}}<th class="px-4 py-3 text-right font-semibold text-gray-600">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
-                    @forelse($comments as $comment)
-                    <tr>
-                        <!-- User -->
-                        <td class="px-6 py-4 text-gray-800">
-                            <div class="flex items-center gap-2">
-                                <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">
-                                    {{ strtoupper(substr($comment->user->name ?? 'A',0,1)) }}
+                    @foreach($comments as $comment)
+                    <tr class="hover:bg-gray-50 transition">
+                        {{-- col 0: expand control --}}
+                        <td></td>
+
+                        {{-- col 1: Pengirim --}}
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-3">
+                                <div class="h-10 w-10 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-sm font-bold text-indigo-600 shadow-sm flex-shrink-0">
+                                    {{ strtoupper(substr($comment->user->name ?? 'A', 0, 1)) }}
                                 </div>
-                                <div>
-                                    <div class="font-medium">{{ $comment->user->name ?? 'Anonim' }}</div>
-                                    <div class="text-xs text-gray-500">{{ $comment->user->email ?? '-' }}</div>
+                                <div class="min-w-0">
+                                    <div class="font-bold text-gray-900 truncate">{{ $comment->user->name ?? 'Anonim' }}</div>
+                                    <div class="text-[10px] text-gray-400 font-medium truncate">{{ $comment->user->email ?? '-' }}</div>
                                 </div>
                             </div>
                         </td>
 
-                        <!-- Isi -->
-                        <td class="px-6 py-4 text-gray-700 max-w-xs truncate">
-                            {{ $comment->isi }}
+                        {{-- col 2: Isi --}}
+                        <td class="px-4 py-3">
+                            <div class="text-gray-700 max-w-sm whitespace-normal leading-relaxed">
+                                {{ $comment->isi }}
+                            </div>
+                            @if($comment->reports_count > 0)
+                                <div class="mt-2 text-[10px] font-bold uppercase tracking-tighter text-red-600 bg-red-50 inline-flex items-center px-2 py-0.5 rounded-full border border-red-100"
+                                     title="Komentar ini telah dilaporkan {{ $comment->reports_count }} kali">
+                                    <i class="fas fa-flag-checkered mr-1"></i> {{ $comment->reports_count }} Laporan
+                                </div>
+                            @endif
                         </td>
 
-                        <!-- Artikel -->
-                        <td class="px-6 py-4 text-blue-600">
-                            <a href="{{ route('blog.show', $comment->post->slug) }}" target="_blank" class="hover:underline">
+                        {{-- col 3: Artikel --}}
+                        <td class="px-4 py-3">
+                            <a href="{{ route('blog.show', $comment->post->slug) }}" target="_blank"
+                               class="text-blue-600 hover:text-blue-800 font-medium hover:underline line-clamp-2 transition text-xs">
                                 {{ $comment->post->judul }}
+                                <i class="fas fa-external-link-alt text-[10px] ml-1 opacity-50"></i>
                             </a>
                         </td>
 
-                        <!-- Aksi -->
-                        <td class="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                        {{-- col 4: Waktu --}}
+                        <td class="px-4 py-3">
+                            <div class="text-[11px] text-gray-500 font-medium whitespace-nowrap">
+                                <span class="block text-gray-900">{{ $comment->created_at->format('d M Y') }}</span>
+                                <span class="text-gray-400">{{ $comment->created_at->format('H:i') }}</span>
+                            </div>
+                        </td>
+
+                        {{-- col 5: Aksi --}}
+                        <td class="px-4 py-3 text-right whitespace-nowrap">
                             <form action="{{ route('admin.comments.destroy', $comment->id) }}" method="POST" class="inline">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" onclick="return confirm('Hapus komentar ini?')" 
-                                        class="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition">
-                                    Hapus
+                                <button type="submit" onclick="return confirm('Hapus komentar ini?')"
+                                        class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 text-[11px] font-bold rounded-lg border border-red-100 hover:bg-red-600 hover:text-white shadow-sm transition uppercase">
+                                    <i class="fas fa-trash-alt mr-1.5"></i> Hapus
                                 </button>
                             </form>
                         </td>
                     </tr>
-                    @empty
-                    <tr>
-                        <td colspan="4" class="px-6 py-4 text-center text-gray-500">
-                            Belum ada komentar ditemukan.
-                        </td>
-                    </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
-
-        <!-- Mobile Cards -->
-        <div class="block md:hidden divide-y divide-gray-200">
-            @forelse($comments as $comment)
-            <div class="p-4">
-                <div class="flex items-center gap-3 mb-2">
-                    <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">
-                        {{ strtoupper(substr($comment->user->name ?? 'A',0,1)) }}
-                    </div>
-                    <div>
-                        <div class="font-medium text-gray-800">{{ $comment->user->name ?? 'Anonim' }}</div>
-                        <div class="text-xs text-gray-500">{{ $comment->user->email ?? '-' }}</div>
-                    </div>
-                </div>
-                <p class="text-gray-700 text-sm mb-2">{{ $comment->isi }}</p>
-                <a href="{{ route('blog.show', $comment->post->slug) }}" target="_blank" class="text-sm text-blue-600 hover:underline">
-                    {{ $comment->post->judul }}
-                </a>
-                <div class="mt-3 text-right">
-                    <form action="{{ route('admin.comments.destroy', $comment->id) }}" method="POST" class="inline">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" onclick="return confirm('Hapus komentar ini?')" 
-                                class="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition">
-                            Hapus
-                        </button>
-                    </form>
-                </div>
-            </div>
-            @empty
-            <p class="text-gray-500 text-center py-4">Belum ada komentar ditemukan.</p>
-            @endforelse
-        </div>
-    </div>
-
-    <!-- Pagination -->
-    <div class="mt-4">
-        {{ $comments->links() }}
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+$(document).ready(function () {
+    $('#comments-table').DataTable({
+        responsive: {
+            details: {
+                type  : 'column',
+                target: 0
+            }
+        },
+        language : { url: 'https://cdn.datatables.net/plug-ins/2.0.8/i18n/id.json' },
+        pageLength: 10,
+        order    : [[4, 'desc']],          // order by Waktu col (idx 4)
+        columnDefs: [
+            // col 0 = expand toggle
+            { className: 'dtr-control', orderable: false, targets: 0, width: '30px' },
+            // col 5 = Aksi — not sortable
+            { orderable: false, targets: 5 }
+        ],
+
+        initComplete: function () {
+            const api = this.api();
+            const $filterRow = $('<tr class="dt-filter-row">').appendTo($('#comments-table thead'));
+
+            api.columns().every(function (idx) {
+                const $th = $('<th>').appendTo($filterRow);
+
+                // no filter for expand col or Aksi col
+                if (idx === 0 || idx === 5) return;
+
+                const title = api.column(idx).header().textContent.trim();
+                $('<input type="text">')
+                    .attr('placeholder', 'Cari ' + title + '…')
+                    .appendTo($th)
+                    .on('keyup change clear', function () {
+                        if (api.column(idx).search() !== this.value) {
+                            api.column(idx).search(this.value).draw();
+                        }
+                    });
+            });
+        }
+    });
+});
+</script>
+@endpush

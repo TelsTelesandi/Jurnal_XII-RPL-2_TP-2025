@@ -9,6 +9,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ForumController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\AuthenticatedSessionController;
+use App\Http\Controllers\ProfileController;
 
 use App\Http\Controllers\Admin\AdminLoginController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -48,6 +49,8 @@ Route::prefix('blog')->name('blog.')->group(function () {
     Route::get('/list', [BlogController::class, 'list'])->name('list');
     Route::get('/{slug}', [BlogController::class, 'show'])->name('show');
     Route::post('/{post}/comment', [BlogController::class, 'storeComment'])->middleware('auth')->name('comment.store');
+    Route::post('/{post}/like', [BlogController::class, 'toggleLike'])->middleware('auth')->name('like');
+    Route::post('/comments/{comment}/report', [BlogController::class, 'reportComment'])->middleware('auth')->name('comment.report');
 });
 
 /*
@@ -55,11 +58,13 @@ Route::prefix('blog')->name('blog.')->group(function () {
 | User Auth (Login/Logout)
 |--------------------------------------------------------------------------
 */
-Route::get('/login', [AuthenticatedSessionController::class, 'create'])
-    ->name('login');
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthenticatedSessionController::class, 'create'])
+        ->name('login');
 
-Route::post('/login', [AuthenticatedSessionController::class, 'store'])
-    ->name('login.store');
+    Route::post('/login', [AuthenticatedSessionController::class, 'store'])
+        ->name('login.store');
+});
 
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->name('logout');
@@ -73,6 +78,17 @@ Route::middleware('auth')->get('/dashboard', function () {
     // kalau mau view terpisah, ganti ke resources/views/dashboard.blade.php
     return view('index');
 })->name('dashboard');
+
+/*
+|--------------------------------------------------------------------------
+| User Profile
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth')->prefix('profile')->name('profile.')->group(function () {
+    Route::get('/', [ProfileController::class, 'edit'])->name('edit');
+    Route::post('/update', [ProfileController::class, 'updateProfile'])->name('update');
+    Route::post('/password', [ProfileController::class, 'updatePassword'])->name('password');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -173,7 +189,10 @@ Route::prefix('admin')->middleware(['auth', 'admin.check'])->name('admin.')->gro
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::resource('users', UserController::class);
+    Route::get('users/{user}/reports', [UserController::class, 'reports'])->name('users.reports');
+    Route::post('users/{user}/unban', [UserController::class, 'unban'])->name('users.unban');
     Route::resource('blog', AdminBlogController::class);
+    Route::post('comments/clear', [CommentController::class, 'clear'])->name('comments.clear');
     Route::resource('comments', CommentController::class)->only(['index', 'destroy']);
 
 

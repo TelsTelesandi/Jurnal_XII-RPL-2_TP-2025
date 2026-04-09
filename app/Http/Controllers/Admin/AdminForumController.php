@@ -375,7 +375,7 @@ class AdminForumController extends Controller
 
     public function reports(): JsonResponse
     {
-        $reports = \App\Models\ForumReport::with([
+        $forumReports = \App\Models\ForumReport::with([
                 'reporter:id,name',
                 'target:id,name',
                 'message:id,message,user_id'
@@ -385,7 +385,8 @@ class AdminForumController extends Controller
             ->get()
             ->map(function ($r) {
                 return [
-                    'id' => $r->id,
+                    'id' => 'f_' . $r->id,
+                    'type' => 'forum',
                     'reason' => $r->reason,
                     'notes' => $r->notes,
                     'created_at' => optional($r->created_at)->toIso8601String(),
@@ -404,6 +405,43 @@ class AdminForumController extends Controller
                     ] : null,
                 ];
             });
+
+        $blogReports = \App\Models\BlogCommentReport::with([
+                'reporter:id,name',
+                'comment' => function($q) {
+                    $q->withTrashed()->with('user:id,name');
+                }
+            ])
+            ->orderBy('created_at', 'desc')
+            ->limit(100)
+            ->get()
+            ->map(function ($r) {
+                return [
+                    'id' => 'b_' . $r->id,
+                    'type' => 'blog',
+                    'reason' => $r->reason,
+                    'notes' => 'Laporan dari Komentar Artikel',
+                    'created_at' => optional($r->created_at)->toIso8601String(),
+                    'reporter' => [
+                        'id' => $r->reporter?->id,
+                        'name' => $r->reporter?->name,
+                    ],
+                    'target' => [
+                        'id' => $r->comment?->user?->id,
+                        'name' => $r->comment?->user?->name,
+                    ],
+                    'message' => $r->comment ? [
+                        'id' => $r->comment->id,
+                        'text' => \Illuminate\Support\Str::limit((string) $r->comment->isi, 140),
+                        'user_id' => $r->comment->user_id,
+                    ] : null,
+                ];
+            });
+
+        $reports = $forumReports->concat($blogReports)
+            ->sortByDesc('created_at')
+            ->take(100)
+            ->values();
 
         return response()->json(['status' => 'success', 'data' => $reports]);
     }
@@ -433,6 +471,20 @@ class AdminForumController extends Controller
         return back()->with('success', 'Status forum diperbarui.');
     }
 
+    public function clear(Request $request)
+    {
+        ForumMessage::query()->update([
+            'is_deleted' => true,
+            'deleted_at' => now(),
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['status' => 'ok', 'message' => 'Semua pesan berhasil dihapus.']);
+        }
+
+        return back()->with('success', 'Semua pesan berhasil dihapus.');
+    }
+
     public function settings(Request $request)
     {
         $request->validate([
@@ -445,7 +497,7 @@ class AdminForumController extends Controller
             'max_users' => 'nullable|integer|min:0',
         ]);
 
-        $s = ForumSetting::current();
+        $s = ForumSetting::first() ?? new ForumSetting();
 
         $s->allow_attachments = $request->boolean('allow_attachments');
         $s->allow_polls = $request->boolean('allow_polls');

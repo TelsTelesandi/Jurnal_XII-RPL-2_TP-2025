@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Models\BlogView;
 use Illuminate\Support\Facades\Schema;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 use App\Helpers\StringHelper;
 
 class AdminBlogController extends Controller
@@ -18,7 +20,6 @@ class AdminBlogController extends Controller
             ->with(['author', 'category'])
             ->withCount('comments');
 
-        // Search
         if ($request->filled('search')) {
             $s = trim($request->search);
             $query->where(function ($q) use ($s) {
@@ -28,18 +29,15 @@ class AdminBlogController extends Controller
             });
         }
 
-        // Filter kategori
         if ($cat = $request->get('kategori')) {
             $query->whereHas('category', fn($c) => $c->where('slug', $cat));
         }
 
-        // Aman: withCount('views') hanya jika tabel ada
         $hasLog = Schema::hasTable('blog_views');
         if ($hasLog) {
-            $query->withCount('views'); // menghasilkan views_count dari relasi
+            $query->withCount('views');
         }
 
-        // Sort
         if ($request->filled('sort')) {
             switch ($request->sort) {
                 case 'oldest':
@@ -47,9 +45,9 @@ class AdminBlogController extends Controller
                     break;
                 case 'popular':
                     if ($hasLog) {
-                        $query->orderBy('views_count', 'desc'); // dari withCount
+                        $query->orderBy('views_count', 'desc');
                     } elseif (Schema::hasColumn('blog_posts', 'views_count')) {
-                        $query->orderBy('views_count', 'desc'); // kolom denormalized (opsional)
+                        $query->orderBy('views_count', 'desc');
                     } else {
                         $query->orderBy('created_at', 'desc');
                     }
@@ -63,10 +61,9 @@ class AdminBlogController extends Controller
 
         $posts = $query->paginate(10)->withQueryString();
 
-        // Kartu statistik (butuh tabel blog_views)
         $todayViews = $hasLog ? BlogView::whereDate('viewed_at', now()->toDateString())->count() : 0;
         $monthViews = $hasLog ? BlogView::whereBetween('viewed_at', [now()->startOfMonth(), now()])->count() : 0;
-        $yearViews = $hasLog ? BlogView::whereBetween('viewed_at', [now()->startOfYear(), now()])->count() : 0;
+        $yearViews  = $hasLog ? BlogView::whereBetween('viewed_at', [now()->startOfYear(), now()])->count() : 0;
 
         return view('admin.blog.index', compact('posts', 'todayViews', 'monthViews', 'yearViews'));
     }
@@ -79,27 +76,50 @@ class AdminBlogController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'judul' => 'required|string|max:255',
-            'isi' => 'required',
-            'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'judul'     => 'required|string|max:255',
+            'isi'       => 'required',
+            'excerpt'   => [
+                'nullable', 'string', 'max:160',
+                function ($attribute, $value, $fail) {
+                    if ($value === null || $value === '') return;
+                    if (preg_match('/\s/', $value)) {
+                        $fail('Ringkasan (Excerpt) tidak boleh mengandung spasi sama sekali.');
+                    }
+                },
+            ],
+            'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
         ]);
 
-        $thumbnailPath = $request->hasFile('thumbnail')
-            ? $request->file('thumbnail')->store('thumbnails', 'public')
-            : null;
+        $thumbnailPath = null;
+        if ($request->hasFile('thumbnail')) {
+            $file = $request->file('thumbnail');
+            try {
+                $filename = time() . '_' . Str::random(5) . '.webp';
+                $manager  = new ImageManager(new Driver());
+                $img      = $manager->decodePath($file->getRealPath());
+                $img->scaleDown(width: 3840);
+                $encoded  = $img->encode(new \Intervention\Image\Encoders\WebpEncoder(quality: 80));
+                \Illuminate\Support\Facades\Storage::disk('public')->put('thumbnails/' . $filename, (string)$encoded);
+                $thumbnailPath = 'thumbnails/' . $filename;
+            } catch (\Exception $e) {
+                $thumbnailPath = $file->store('thumbnails', 'public');
+            }
+        }
 
         $judul = StringHelper::censorProfanity($request->judul);
-        $isi = StringHelper::censorProfanity($request->isi);
+        $isi   = StringHelper::censorProfanity($request->isi);
 
         BlogPost::create([
-            'judul' => $judul,
-            'slug' => Str::slug($judul) . '-' . Str::random(6), // biar unik
-            'excerpt' => Str::limit(strip_tags($isi), 160),
-            'isi' => $isi,
-            'thumbnail' => $thumbnailPath,
-            'user_id' => auth()->id(),
-            // 'published_at' => now(), // aktifkan kalau mau auto-publish
+            'judul'        => $judul,
+            'slug'         => Str::slug($judul) . '-' . Str::random(6),
+            'excerpt'      => $request->filled('excerpt') ? $request->excerpt : null,
+            'isi'          => $isi,
+            'thumbnail'    => $thumbnailPath,
+            'user_id'      => auth()->id(),
+            'published_at' => now(),
         ]);
+
+        \Illuminate\Support\Facades\Cache::forget('home_latest_posts_v2');
 
         return redirect()->route('admin.blog.index')
             ->with('success', 'Artikel berhasil dibuat!');
@@ -120,30 +140,51 @@ class AdminBlogController extends Controller
     public function update(Request $request, BlogPost $blog)
     {
         $request->validate([
-            'judul' => 'required|string|max:255',
-            'isi' => 'required',
-            'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'judul'     => 'required|string|max:255',
+            'isi'       => 'required',
+            'excerpt'   => [
+                'nullable', 'string', 'max:160',
+                function ($attribute, $value, $fail) {
+                    if ($value === null || $value === '') return;
+                    if (preg_match('/\s/', $value)) {
+                        $fail('Ringkasan (Excerpt) tidak boleh mengandung spasi sama sekali.');
+                    }
+                },
+            ],
+            'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
         ]);
 
         $judul = StringHelper::censorProfanity($request->judul);
-        $isi = StringHelper::censorProfanity($request->isi);
+        $isi   = StringHelper::censorProfanity($request->isi);
 
         $data = [
-            'judul' => $judul,
-            'isi' => $isi,
-            'excerpt' => Str::limit(strip_tags($isi), 160),
+            'judul'   => $judul,
+            'isi'     => $isi,
+            'excerpt' => $request->filled('excerpt') ? $request->excerpt : null,
         ];
 
-        // perbarui slug kalau judul berubah (opsional)
         if ($blog->judul !== $judul) {
             $data['slug'] = Str::slug($judul) . '-' . Str::random(6);
         }
 
         if ($request->hasFile('thumbnail')) {
-            $data['thumbnail'] = $request->file('thumbnail')->store('thumbnails', 'public');
+            $file = $request->file('thumbnail');
+            try {
+                $filename = time() . '_' . Str::random(5) . '.webp';
+                $manager  = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+                $img      = $manager->decodePath($file->getRealPath());
+                $img->scaleDown(width: 3840);
+                $encoded  = $img->encode(new \Intervention\Image\Encoders\WebpEncoder(quality: 80));
+                \Illuminate\Support\Facades\Storage::disk('public')->put('thumbnails/' . $filename, (string)$encoded);
+                $data['thumbnail'] = 'thumbnails/' . $filename;
+            } catch (\Exception $e) {
+                $data['thumbnail'] = $file->store('thumbnails', 'public');
+            }
         }
 
         $blog->update($data);
+
+        \Illuminate\Support\Facades\Cache::forget('home_latest_posts_v2');
 
         return redirect()->route('admin.blog.index')
             ->with('success', 'Artikel berhasil diperbarui!');
@@ -152,6 +193,7 @@ class AdminBlogController extends Controller
     public function destroy(BlogPost $blog)
     {
         $blog->delete();
+        \Illuminate\Support\Facades\Cache::forget('home_latest_posts_v2');
         return redirect()->route('admin.blog.index')
             ->with('success', 'Artikel berhasil dihapus!');
     }

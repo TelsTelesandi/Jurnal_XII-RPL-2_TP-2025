@@ -9,7 +9,21 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::query();
+        $systemAdminId = \App\Models\User::where('role_id', 1)->value('id') ?? 1;
+        // 🔄 Sinkronisasi retro-aktif: Pastikan user lama yang sudah punya 3 laporan otomatis ter-ban
+        $allUsers = User::all();
+        foreach ($allUsers as $u) {
+            if ($u->getTotalReportsCount() >= 3 && !$u->isBannedFromForum()) {
+                \App\Models\ForumBan::create([
+                    'user_id' => $u->id,
+                    'banned_by' => $systemAdminId,
+                    'reason' => 'Auto-ban: Telah dilaporkan lebih dari 3 kali oleh pengguna lain.',
+                    'is_active' => true
+                ]);
+            }
+        }
+
+        $query = User::with('activeBan');
 
         // Jika ada pencarian
         if ($request->filled('q')) {
@@ -27,6 +41,7 @@ class UserController extends Controller
             'totalUsers' => User::count(),
             'activeUsers' => User::whereNotNull('email_verified_at')->count(),
             'pendingUsers' => User::whereNull('email_verified_at')->count(),
+            'bannedUsers' => User::has('activeBan')->count(),
         ]);
     }
 
@@ -93,4 +108,69 @@ class UserController extends Controller
             ->with('success', 'User berhasil dihapus.');
     }
 
+    public function unban(User $user)
+    {
+        if ($user->activeBan) {
+            $user->activeBan()->update([
+                'is_active' => false,
+                'expires_at' => now(),
+            ]);
+            
+            // Hapus report komentar agar tidak otomatis ter-banned lagi
+            \App\Models\BlogCommentReport::whereHas('comment', function($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->delete();
+
+            // Hapus juga report forum agar hitungan tereset total
+            \App\Models\ForumReport::where('target_user_id', $user->id)->delete();
+            
+        }
+
+        return redirect()->back()->with('success', 'Status blokir (ban) pengguna berhasil dicabut. Laporan telah di-reset menjadi 0.');
+    }
+
+    public function reports(User $user)
+    {
+        $forumReports = \App\Models\ForumReport::with(['reporter:id,name', 'message:id,message,user_id'])
+            ->where('target_user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($r) {
+                return [
+                    'id' => 'f_' . $r->id,
+                    'type' => 'forum',
+                    'reason' => $r->reason,
+                    'notes' => $r->notes,
+                    'created_at' => optional($r->created_at)->toIso8601String(),
+                    'reporter' => $r->reporter?->name ?? 'User',
+                    'message' => $r->message ? \Illuminate\Support\Str::limit((string) $r->message->message, 140) : null,
+                ];
+            });
+
+        $blogReports = \App\Models\BlogCommentReport::with(['reporter:id,name', 'comment' => function($q) {
+                $q->withTrashed();
+            }])
+            ->whereHas('comment', function ($q) use ($user) {
+                $q->withTrashed()->where('user_id', $user->id);
+            })
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($r) {
+                return [
+                    'id' => 'b_' . $r->id,
+                    'type' => 'blog',
+                    'reason' => $r->reason,
+                    'notes' => 'Laporan dari Komentar Artikel',
+                    'created_at' => optional($r->created_at)->toIso8601String(),
+                    'reporter' => $r->reporter?->name ?? 'User',
+                    'message' => $r->comment ? \Illuminate\Support\Str::limit((string) $r->comment->isi, 140) : null,
+                ];
+            });
+
+        $reports = $forumReports->concat($blogReports)
+            ->sortByDesc('created_at')
+            ->values();
+
+        return response()->json(['status' => 'success', 'data' => $reports]);
+    }
 }

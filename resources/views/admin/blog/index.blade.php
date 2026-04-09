@@ -44,123 +44,141 @@
             </div>
         </div>
     </div>
-    
 
-    <!-- Articles List -->
-    @if($posts->count() > 0)
-        <ul class="space-y-3">
-            @foreach($posts as $post)
-                <li class="bg-white border rounded-lg shadow-sm hover:shadow-md transition p-4">
-                    <div class="flex items-start">
-                        <!-- Thumbnail -->
-                        <div class="flex-shrink-0 h-16 w-16">
-                            @if($post->thumbnail)
-                                <img class="h-16 w-16 rounded-lg object-cover"
-                                     src="{{ asset('storage/'.$post->thumbnail) }}"
-                                     alt="{{ $post->judul }}">
-                            @else
-                                <div class="h-16 w-16 rounded-lg bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                                    <i class="fas fa-image text-gray-500 text-xl"></i>
-                                </div>
-                            @endif
-                        </div>
+    <!-- DataTable -->
+    <div class="bg-white shadow rounded-lg overflow-hidden p-4">
+        <div class="overflow-x-auto">
+            <table id="blog-table" class="min-w-full text-sm" style="width:100%">
+                <thead>
+                    <tr>
+                        {{-- col 0: dtr-control expand --}}
+                        <th></th>
+                        {{-- col 1 --}}<th class="px-4 py-3 text-left font-semibold text-gray-600">Artikel</th>
+                        {{-- col 2 --}}<th class="px-4 py-3 text-left font-semibold text-gray-600">Penulis</th>
+                        {{-- col 3 --}}<th class="px-4 py-3 text-center font-semibold text-gray-600">Views</th>
+                        {{-- col 4 --}}<th class="px-4 py-3 text-left font-semibold text-gray-600">Tanggal</th>
+                        {{-- col 5 --}}<th class="px-4 py-3 text-center font-semibold text-gray-600">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    @foreach($posts as $post)
+                    <tr class="hover:bg-gray-50 transition">
+                        {{-- col 0: expand control --}}
+                        <td></td>
 
-                        <!-- Content -->
-                        <div class="ml-4 flex-1 min-w-0">
-                            <a href="{{ route('admin.blog.show',$post) }}"
-                               class="text-blue-600 font-medium hover:underline">
-                               {{ $post->judul }}
-                            </a>
-
-                            <div class="mt-2 flex flex-wrap gap-4 text-sm text-gray-500">
-                                <span class="inline-flex items-center">
-                                    <i class="fas fa-user mr-1"></i>{{ $post->author->name ?? 'Admin' }}
-                                </span>
-                                <span class="inline-flex items-center">
-                                    <i class="fas fa-eye mr-1"></i>{{ $post->views_count ?? 0 }} views
-                                </span>
-                                <span class="inline-flex items-center">
-                                    <i class="fas fa-calendar mr-1"></i>{{ $post->created_at->format('d M Y') }}
-                                </span>
-                            </div>
-
-                            @if($post->excerpt)
-                                <p class="mt-2 text-sm text-gray-600 line-clamp-2">
-                                    {{ \Illuminate\Support\Str::limit($post->excerpt, 120) }}
-                                </p>
-                            @endif
-
-                            <!-- Actions: MOBILE -->
-                            <div class="sm:hidden w-full mt-3">
-                                <div class="grid grid-cols-3 gap-2">
-                                    <a href="{{ route('admin.blog.show',$post) }}"
-                                       class="inline-flex items-center justify-center gap-2 px-3 py-3 min-h-[44px]
-                                              rounded-lg border bg-white text-gray-700 text-sm font-medium
-                                              hover:bg-gray-50 active:bg-gray-100"
-                                       aria-label="Lihat Blog">
-                                        <i class="fas fa-eye"></i><span>Lihat</span>
+                        {{-- col 1: Artikel --}}
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-3">
+                                @if($post->thumbnail)
+                                    <img class="h-12 w-16 rounded-lg object-cover flex-shrink-0"
+                                         src="{{ asset('storage/'.$post->thumbnail) }}"
+                                         alt="{{ $post->judul }}">
+                                @else
+                                    <div class="h-12 w-16 rounded-lg bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-image text-gray-500"></i>
+                                    </div>
+                                @endif
+                                <div class="min-w-0">
+                                    <a href="{{ route('admin.blog.show', $post) }}"
+                                       class="text-blue-600 font-medium hover:underline line-clamp-2 block">
+                                        {{ $post->judul }}
                                     </a>
-                                    <a href="{{ route('admin.blog.edit',$post) }}"
-                                       class="inline-flex items-center justify-center gap-2 px-3 py-3 min-h-[44px]
-                                              rounded-lg border bg-white text-gray-700 text-sm font-medium
-                                              hover:bg-gray-50 active:bg-gray-100"
-                                       aria-label="Edit Blog">
-                                        <i class="fas fa-edit"></i><span>Edit</span>
-                                    </a>
-                                    <form method="POST" action="{{ route('admin.blog.destroy',$post) }}"
-                                          onsubmit="return confirm('Yakin ingin menghapus Blog ini?')">
-                                        @csrf @method('DELETE')
-                                        <button type="submit"
-                                                class="w-full inline-flex items-center justify-center gap-2 px-3 py-3 min-h-[44px]
-                                                       rounded-lg border bg-red-50 text-red-700 text-sm font-semibold
-                                                       hover:bg-red-100 active:bg-red-200"
-                                                aria-label="Hapus Blog">
-                                            <i class="fas fa-trash"></i><span>Hapus</span>
-                                        </button>
-                                    </form>
+                                    @if($post->excerpt)
+                                        <p class="text-xs text-gray-400 line-clamp-1 mt-0.5">{{ \Illuminate\Support\Str::limit($post->excerpt, 70) }}</p>
+                                    @endif
                                 </div>
                             </div>
-                        </div>
+                        </td>
 
-                        <!-- Actions: DESKTOP -->
-                        <div class="ml-4 flex-shrink-0 items-center space-x-3 hidden sm:flex">
-                            <a href="{{ route('admin.blog.show',$post) }}"
-                               class="text-indigo-600 hover:text-indigo-900" title="Lihat" aria-label="Lihat Blog">
+                        {{-- col 2: Penulis --}}
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">
+                            <i class="fas fa-user text-xs mr-1 text-gray-400"></i>{{ $post->author->name ?? 'Admin' }}
+                        </td>
+
+                        {{-- col 3: Views --}}
+                        <td class="px-4 py-3 text-center">
+                            <span class="inline-flex items-center gap-1 text-gray-600">
+                                <i class="fas fa-eye text-xs text-blue-400"></i> {{ number_format($post->views_count ?? 0) }}
+                            </span>
+                        </td>
+
+                        {{-- col 4: Tanggal --}}
+                        <td class="px-4 py-3 text-gray-500 whitespace-nowrap text-xs">
+                            {{ $post->created_at->format('d M Y') }}
+                        </td>
+
+                        {{-- col 5: Aksi --}}
+                        <td class="px-4 py-3 text-center whitespace-nowrap space-x-1">
+                            <a href="{{ route('admin.blog.show', $post) }}"
+                               class="inline-flex items-center px-2 py-1 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 text-xs" title="Lihat">
                                 <i class="fas fa-eye"></i>
                             </a>
-                            <a href="{{ route('admin.blog.edit',$post) }}"
-                               class="text-green-600 hover:text-green-900" title="Edit" aria-label="Edit Blog">
+                            <a href="{{ route('admin.blog.edit', $post) }}"
+                               class="inline-flex items-center px-2 py-1 bg-green-50 text-green-600 rounded hover:bg-green-100 text-xs" title="Edit">
                                 <i class="fas fa-edit"></i>
                             </a>
-                            <form method="POST" action="{{ route('admin.blog.destroy',$post) }}"
-                                  onsubmit="return confirm('Yakin ingin menghapus Blog ini?')">
+                            <form method="POST" action="{{ route('admin.blog.destroy', $post) }}"
+                                  class="inline" onsubmit="return confirm('Yakin ingin menghapus Blog ini?')">
                                 @csrf @method('DELETE')
-                                <button type="submit" class="text-red-600 hover:text-red-900" title="Hapus" aria-label="Hapus Blog">
+                                <button type="submit"
+                                        class="inline-flex items-center px-2 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100 text-xs" title="Hapus">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </form>
-                        </div>
-                    </div>
-                </li>
-            @endforeach
-        </ul>
-
-        <!-- Pagination -->
-        <div class="mt-4">
-            {{ $posts->withQueryString()->links() }}
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
-    @else
-        <div class="text-center py-12 bg-white rounded-lg border">
-            <i class="fas fa-newspaper text-gray-400 text-6xl mb-4"></i>
-            <h3 class="mt-2 text-sm font-medium text-gray-900">Belum ada Blog</h3>
-            <p class="mt-1 text-sm text-gray-500">Mulai buat Blog pertama Anda sekarang.</p>
-            <div class="mt-6">
-                <a href="{{ route('admin.blog.create') }}"
-                   class="inline-flex items-center px-6 py-3 bg-blue-600 text-white text-sm font-semibold rounded-lg shadow hover:bg-blue-700">
-                    <i class="fas fa-plus mr-2"></i> Buat Blog Baru
-                </a>
-            </div>
-        </div>
-    @endif
+    </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+$(document).ready(function () {
+    $('#blog-table').DataTable({
+        responsive: {
+            details: {
+                type  : 'column',
+                target: 0
+            }
+        },
+        language : { url: 'https://cdn.datatables.net/plug-ins/2.0.8/i18n/id.json' },
+        pageLength: 10,
+        order    : [[4, 'desc']],          // order by Tanggal col (idx 4)
+        columnDefs: [
+            // col 0 = expand toggle
+            { className: 'dtr-control', orderable: false, targets: 0, width: '30px' },
+            // col 1 = Artikel — disable sort (contains HTML/thumbnail)
+            { orderable: false, targets: 1 },
+            // col 5 = Aksi — not sortable
+            { orderable: false, targets: 5 }
+        ],
+
+        initComplete: function () {
+            const api = this.api();
+            const $filterRow = $('<tr class="dt-filter-row">').appendTo($('#blog-table thead'));
+
+            api.columns().every(function (idx) {
+                const $th = $('<th>').appendTo($filterRow);
+
+                // no filter for expand col or Aksi col
+                if (idx === 0 || idx === 5) return;
+
+                const title = api.column(idx).header().textContent.trim();
+                $('<input type="text">')
+                    .attr('placeholder', 'Cari ' + title + '…')
+                    .appendTo($th)
+                    .on('keyup change clear', function () {
+                        if (api.column(idx).search() !== this.value) {
+                            api.column(idx).search(this.value).draw();
+                        }
+                    });
+            });
+        }
+    });
+});
+</script>
+@endpush

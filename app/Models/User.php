@@ -143,4 +143,14 @@ class User extends Authenticatable
     {
         return $this->role_id === 2;
     }
+
+    public function getTotalReportsCount(): int
+    {
+        $forumReports = \App\Models\ForumReport::where('target_user_id', $this->id)->count();
+        $blogReports = \App\Models\BlogCommentReport::whereHas('comment', function ($q) {
+            $q->withTrashed()->where('user_id', $this->id);
+        })->count();
+
+        return $forumReports + $blogReports;
+    }
 }

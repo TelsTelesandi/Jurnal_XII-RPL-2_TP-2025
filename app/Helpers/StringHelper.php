@@ -6,7 +6,7 @@ class StringHelper
 {
     protected static array $badWords = [
         // Indonesia
-        'anjing','anjg','anjirr','anjir','anjay','anjayyy','bangsat','bajingan','kontol','memek','peler','toket','ngentot','ngewe','pepek','jembut','jancuk','kentut','tolol','goblok','idiot','kampret','asu','brengsek','fuckboy','fuckgirl',
+        'anjing','anjg','anjirr','anjir','anjay','anjayyy','bangsat','bajingan','badjingan','kontol','kntl','k0nt0l','k0ntol','kont0l','memek','mmk','m3m3k','peler','plr','toket','ngentot','ngewe','pepek','jembut','jancuk','jncuk','kentut','tolol','goblok','gblk','bodo','bego','idiot','kampret','asu','brengsek','babi','monyet','kunyuk','tai','taik','telek','lonte','lont3','perek','sundel','jablay','pelacur','lacur','pantek','puki','pukimak','kimak','setan','iblis','dajjal','keparat','ngehe','fuckboy','fuckgirl',
         // English
         'fuck','fucker','fucking','motherfucker','mf','shit','bullshit','bitch','asshole','dick','dickhead','pussy','cunt','bastard','slut','whore','prick','jerk','moron','retard','stupid','idiot','damn','screw','screwed'
     ];
@@ -34,10 +34,40 @@ class StringHelper
 
         $patterns = [];
         foreach ($words as $w) {
-            $escaped = preg_quote($w, '~');
-            // Support spaces or hyphens in phrases by matching any whitespace
-            $escaped = str_replace(['\\ ', '\\-'], ['\\s+', '(?:\\s|-)'], $escaped);
-            $patterns[] = "~\\b{$escaped}\\b~iu";
+            $regex = '';
+            $length = mb_strlen($w);
+
+            // GANTI: Menggunakan perulangan & percabangan untuk filter cerdas (Leetspeak & Singkatan Vokal)
+            for ($i = 0; $i < $length; $i++) {
+                $char = mb_strtolower(mb_substr($w, $i, 1));
+
+                if ($char === 'a') {
+                    $regex .= '[aA4@]+';
+                } elseif ($char === 'i') {
+                    $regex .= '[iI1!]+';
+                } elseif ($char === 'u') {
+                    $regex .= '[uUvV]+';
+                } elseif ($char === 'e') {
+                    $regex .= '[eE3]+';
+                } elseif ($char === 'o') {
+                    $regex .= '[oO0]+';
+                } elseif ($char === 's') {
+                    $regex .= '[sS5$]+';
+                } elseif ($char === 'g') {
+                    $regex .= '[gG9]+';
+                } elseif ($char === 'b') {
+                    $regex .= '[bB8]+';
+                } elseif ($char === 't') {
+                    $regex .= '[tT7]+';
+                } elseif ($char === ' ') {
+                    $regex .= '[\s\-\_]+';
+                } else {
+                    $regex .= '[' . preg_quote($char, '~') . strtoupper($char) . ']+';
+                }
+            }
+
+            // Boundary
+            $patterns[] = "~\\b{$regex}\\b~iu";
         }
 
         return self::$compiledPatterns = $patterns;
@@ -59,10 +89,19 @@ class StringHelper
         if ($text === null || $text === '') return $text;
         $patterns = self::compilePatterns();
         $replacer = function(array $m) { return self::maskMatch($m[0]); };
-        foreach ($patterns as $pat) {
-            $text = preg_replace_callback($pat, $replacer, $text);
-        }
-        return $text;
+
+        // Pastikan HTML tag tidak ikut tersensor (misalnya <s> jangan berubah jadi <*>)
+        return preg_replace_callback(
+            '/(>|^)([^<]+)/u',
+            function ($matches) use ($patterns, $replacer) {
+                $content = $matches[2];
+                foreach ($patterns as $pat) {
+                    $content = preg_replace_callback($pat, $replacer, $content);
+                }
+                return $matches[1] . $content;
+            },
+            $text
+        );
     }
 
     public static function containsProfanity(?string $text): bool

@@ -19,11 +19,17 @@ class LoginRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
+        $rules = [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
-            'g-recaptcha-response' => ['required'], // ✅ wajib isi captcha
         ];
+
+        // Hanya wajib reCAPTCHA jika ada token aktif di .env
+        if (config('services.recaptcha.secret_key')) {
+            $rules['g-recaptcha-response'] = ['required'];
+        }
+
+        return $rules;
     }
 
     public function messages(): array
@@ -38,18 +44,35 @@ class LoginRequest extends FormRequest
      */
     protected function passedValidation()
     {
-        // Kirim verifikasi ke Google reCAPTCHA
-        $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-            'secret' => config('services.recaptcha.secret_key'),
-            'response' => $this->input('g-recaptcha-response'),
-            'remoteip' => $this->ip(),
-        ]);
+        if (!config('services.recaptcha.secret_key')) {
+            return;
+        }
 
-        $result = $response->json();
+        try {
+            // Kirim verifikasi ke Google reCAPTCHA
+            $response = Http::asForm()
+                ->withoutVerifying() // Laragon kadang bermasalah dengan cert SSL
+                ->timeout(5)
+                ->post('https://www.google.com/recaptcha/api/siteverify', [
+                'secret' => config('services.recaptcha.secret_key'),
+                'response' => $this->input('g-recaptcha-response'),
+                'remoteip' => $this->ip(),
+            ]);
 
-        if (!($result['success'] ?? false)) {
+            $result = $response->json();
+
+            if (!($result['success'] ?? false)) {
+                throw ValidationException::withMessages([
+                    'g-recaptcha-response' => 'Verifikasi captcha gagal, coba lagi.',
+                ]);
+            }
+        } catch (\Exception $e) {
+            // Bypass reCAPTCHA jika koneksi error di local/development
+            if (app()->environment('local')) {
+                return;
+            }
             throw ValidationException::withMessages([
-                'g-recaptcha-response' => 'Verifikasi captcha gagal, coba lagi.',
+                'g-recaptcha-response' => 'Sistem tidak dapat terhubung ke verifikasi reCAPTCHA. Silakan cek koneksi.',
             ]);
         }
     }

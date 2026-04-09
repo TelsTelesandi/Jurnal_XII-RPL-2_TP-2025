@@ -10,7 +10,11 @@ class AdminLoginController extends Controller
 {
     public function showLoginForm()
     {
-        return view('admin.auth.login');
+        return response()->view('admin.auth.login')->withHeaders([
+            'Cache-Control' => 'no-cache, no-store, max-age=0, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ]);
     }
 
     public function login(Request $request)
